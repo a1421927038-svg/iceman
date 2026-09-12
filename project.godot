@@ -13,7 +13,7 @@ config_version=5
 config/name="ICEman"
 run/main_scene="res://scenes/FridgeLevel.tscn"
 config/features=PackedStringArray("4.8", "GL Compatibility")
-config/icon="res://icon.svg"
+config/icon="res://icon.png"
 
 [display]
 

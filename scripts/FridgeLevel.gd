@@ -40,6 +40,8 @@ const FRIDGE_PLAYER_DRAG_HIT_RECT := Rect2(-118.0, -286.0, 236.0, 344.0)
 const FRIDGE_TOOLBAR_SIZE := Vector2(380.0, 380.0)
 const FRIDGE_SETTINGS_SIZE := Vector2(250.0, 238.0)
 const FRIDGE_YARN_PILE_SIZE := Vector2(260.0, 160.0)
+const FRIDGE_PANEL_FOLLOW_MARGIN := 72.0
+const FRIDGE_ITEM_HEADER_DRAG_HEIGHT := 22.0
 
 var world: Node2D
 var camera: Camera2D
@@ -70,6 +72,7 @@ var fridge_yarn_drag_origin_parent: Node
 var fridge_yarn_drag_origin_position := Vector2.ZERO
 var fridge_yarn_drag_release_velocity := Vector2.ZERO
 var fridge_item_panel_has_manual_position := false
+var fridge_item_panel_offset := Vector2.ZERO
 var fridge_settings_panel_has_manual_position := false
 var fridge_player_is_dragging := false
 var fridge_player_drag_offset := Vector2.ZERO
@@ -167,6 +170,7 @@ func _spawn_fridge_cat_pet() -> void:
 	fridge_cat_pet.name = "FridgeCatPet"
 	fridge_cat_pet.global_position = FRIDGE_CAT_POSITION
 	fridge_cat_pet.clicked.connect(_on_fridge_cat_pet_clicked)
+	fridge_cat_pet.close_requested.connect(_on_fridge_cat_pet_close_requested)
 	world.add_child(fridge_cat_pet)
 
 
@@ -190,6 +194,11 @@ func _on_return_door_clicked(_level_id: String) -> void:
 
 func _on_fridge_cat_pet_clicked() -> void:
 	_show_fridge_item_toolbar()
+
+
+## Clicking the cat while its mouth is open closes the inventory again.
+func _on_fridge_cat_pet_close_requested() -> void:
+	_on_fridge_item_toolbar_close_pressed()
 
 
 func _clear_overlay() -> void:
@@ -220,6 +229,7 @@ func _clear_overlay() -> void:
 	fridge_yarn_drag_origin_position = Vector2.ZERO
 	fridge_yarn_drag_release_velocity = Vector2.ZERO
 	fridge_item_panel_has_manual_position = false
+	fridge_item_panel_offset = Vector2.ZERO
 	fridge_settings_panel_has_manual_position = false
 	fridge_player_is_dragging = false
 	fridge_player_drag_offset = Vector2.ZERO
@@ -282,32 +292,14 @@ func _create_fridge_item_toolbar() -> void:
 	content.add_theme_constant_override("separation", 4)
 	fridge_item_panel.add_child(content)
 
+	# The mouth panel shows only the cat mouth art: no title, no coin readout and
+	# no close button (clicking the cat again closes it). The header is kept as
+	# an invisible strip so the panel can still be nudged by hand.
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 6)
+	header.custom_minimum_size = Vector2(0.0, FRIDGE_ITEM_HEADER_DRAG_HEIGHT)
 	header.mouse_filter = Control.MOUSE_FILTER_STOP
 	header.gui_input.connect(Callable(self, "_on_fridge_panel_drag_handle_input").bind(fridge_item_panel, "item"))
 	content.add_child(header)
-
-	var title := Label.new()
-	title.text = "猫嘴背包"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title.add_theme_font_size_override("font_size", 14)
-	title.add_theme_color_override("font_color", Color(0.98, 0.96, 0.90))
-	header.add_child(title)
-
-	fridge_coin_label = Label.new()
-	fridge_coin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	fridge_coin_label.add_theme_font_size_override("font_size", 12)
-	fridge_coin_label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.32))
-	header.add_child(fridge_coin_label)
-
-	var close_button := Button.new()
-	close_button.text = "X"
-	close_button.tooltip_text = "关闭"
-	close_button.custom_minimum_size = Vector2(24.0, 24.0)
-	close_button.pressed.connect(_on_fridge_item_toolbar_close_pressed)
-	header.add_child(close_button)
 
 	fridge_yarn_pile = Control.new()
 	fridge_yarn_pile.name = "YarnPile"
@@ -1032,8 +1024,10 @@ func _position_fridge_popups() -> void:
 	var screen_position: Vector2 = _get_fridge_player_screen_position()
 	var item_position: Vector2 = _get_fridge_mouth_inventory_position()
 
-	if fridge_item_panel != null and not fridge_item_panel_has_manual_position and fridge_dragged_panel != fridge_item_panel:
-		fridge_item_panel.position = item_position
+	if fridge_item_panel != null and fridge_dragged_panel != fridge_item_panel:
+		# The mouth inventory always follows the cat; a manual panel drag only
+		# shifts the offset relative to the cat's mouth.
+		fridge_item_panel.position = _clamp_fridge_panel_follow(fridge_item_panel, item_position + fridge_item_panel_offset)
 		fridge_item_panel.size = FRIDGE_TOOLBAR_SIZE
 
 	if fridge_settings_panel != null and not fridge_settings_panel_has_manual_position and fridge_dragged_panel != fridge_settings_panel:
@@ -1067,6 +1061,8 @@ func _handle_fridge_panel_drag(event: InputEvent) -> bool:
 	if event is InputEventMouseButton:
 		var mouse_button := event as InputEventMouseButton
 		if mouse_button.button_index == MOUSE_BUTTON_LEFT and not mouse_button.pressed:
+			if fridge_dragged_panel == fridge_item_panel:
+				fridge_item_panel_offset = fridge_item_panel.position - _get_fridge_mouth_inventory_position()
 			fridge_dragged_panel = null
 			return true
 
@@ -1146,7 +1142,26 @@ func _get_fridge_mouth_inventory_position() -> Vector2:
 	var cat_position := _get_fridge_cat_screen_position()
 	var mouth_anchor := cat_position + Vector2(0.0, -124.0)
 	var target := mouth_anchor + Vector2(-FRIDGE_TOOLBAR_SIZE.x * 0.5 + 40.0, -FRIDGE_TOOLBAR_SIZE.y + 28.0)
-	return _clamp_fridge_panel_position(fridge_item_panel, target)
+	return _clamp_fridge_panel_follow(fridge_item_panel, target)
+
+
+# The mouth inventory is anchored to the cat, so it may hang off screen while the
+# cat is dragged to a corner: the bound only keeps a grabbable sliver visible.
+func _clamp_fridge_panel_follow(panel: Control, target_position: Vector2) -> Vector2:
+	if panel == null:
+		return target_position
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var panel_size: Vector2 = panel.size
+	if panel_size.x <= 0.0 or panel_size.y <= 0.0:
+		panel_size = panel.custom_minimum_size
+	var min_x: float = FRIDGE_PANEL_FOLLOW_MARGIN - panel_size.x
+	var max_x: float = viewport_size.x - FRIDGE_PANEL_FOLLOW_MARGIN
+	var min_y: float = FRIDGE_PANEL_FOLLOW_MARGIN - panel_size.y
+	var max_y: float = viewport_size.y - FRIDGE_PANEL_FOLLOW_MARGIN
+	return Vector2(
+		clamp(target_position.x, min_x, max_x),
+		clamp(target_position.y, min_y, max_y)
+	)
 
 
 func _show_fridge_coin_popup(amount: int) -> void:

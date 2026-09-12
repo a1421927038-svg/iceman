@@ -2,6 +2,7 @@ class_name FridgeCatPet
 extends Area2D
 
 signal clicked
+signal close_requested
 
 const IDLE_TEXTURE_PATH := "res://assets/generated/paper_fridge_cat_idle.png"
 const OPEN_TEXTURE_PATHS := [
@@ -73,10 +74,10 @@ func _input(event: InputEvent) -> void:
 		var mouse_button := event as InputEventMouseButton
 		if mouse_button.button_index == MOUSE_BUTTON_LEFT and not mouse_button.pressed:
 			is_dragging = false
-			input_pickable = not is_bag_open
+			input_pickable = true
 			get_viewport().set_input_as_handled()
 			if drag_start_mouse.distance_to(get_viewport().get_mouse_position()) <= DRAG_CLICK_THRESHOLD and drag_distance <= DRAG_CLICK_THRESHOLD:
-				_begin_opening_animation()
+				_toggle_bag_from_click()
 
 
 func _create_hit_area() -> void:
@@ -131,7 +132,9 @@ func set_bag_open(open: bool) -> void:
 	opening_elapsed = 0.0
 	opening_frame_index = 0
 	visible = true
-	input_pickable = not is_bag_open
+	# The cat stays pickable while its mouth is open so the player can drag it
+	# around, with the mouth inventory panel following along.
+	input_pickable = true
 	if sprite != null:
 		if is_bag_open and not open_textures.is_empty():
 			sprite.texture = open_textures[open_textures.size() - 1]
@@ -140,15 +143,19 @@ func set_bag_open(open: bool) -> void:
 	queue_redraw()
 
 
-func _begin_opening_animation() -> void:
-	if is_opening or is_bag_open:
+## A click on the cat toggles the bag: the first one opens it, the next closes it.
+func _toggle_bag_from_click() -> void:
+	if is_opening:
+		return
+	if is_bag_open:
+		close_requested.emit()
 		return
 	if open_textures.is_empty():
 		set_bag_open(true)
 		clicked.emit()
 		return
 	is_opening = true
-	input_pickable = false
+	input_pickable = true
 	opening_elapsed = 0.0
 	opening_frame_index = 0
 	if sprite != null:
