@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://b3niudpggr5qs"]
+
+[ext_resource type="Script" uid="uid://7xf6hro0af2r" path="res://scripts/FridgeLevel.gd" id="1_fridgelevel"]
+
+[node name="FridgeLevel" type="Node2D" unique_id=407243629]
+script = ExtResource("1_fridgelevel")
