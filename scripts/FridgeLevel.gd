@@ -14,6 +14,9 @@ const FridgeRoundChoiceScript := preload("res://scripts/FridgeRoundChoice.gd")
 const FridgeItemIconScript := preload("res://scripts/FridgeItemIcon.gd")
 const FridgeYarnBallScript := preload("res://scripts/FridgeYarnBall.gd")
 const CoinPriceButtonScript := preload("res://scripts/CoinPriceButton.gd")
+const FridgeChestScript := preload("res://scripts/FridgeChest.gd")
+const ActionSkeletonStandScript := preload("res://addons/骨骼动画/skeleton_stand.gd")
+const ActionGalleryPanelScript := preload("res://addons/骨骼动画/action_gallery_panel.gd")
 
 const LEVEL_ID := "fridge_people"
 const LEVEL_NAME := "冰箱人"
@@ -34,14 +37,38 @@ const FRIDGE_ITEMS := [
 ]
 
 const FRIDGE_ESCAPE_POSITION := Vector2(500.0, -235.0)
-const FRIDGE_CAT_POSITION := Vector2(250.0, 190.0)
+# The four actors stand in one row on the same ground line (visual bottoms
+# measured from their art): skeleton -> prop box -> fridge man -> cat.
+const FRIDGE_CAT_POSITION := Vector2(250.0, 131.0)
+const FRIDGE_GALLERY_STAND_POSITION := Vector2(-450.0, 139.0)
 const FRIDGE_ESCAPE_HIT_RECT := Rect2(-54.0, -54.0, 108.0, 108.0)
 const FRIDGE_PLAYER_DRAG_HIT_RECT := Rect2(-118.0, -286.0, 236.0, 344.0)
-const FRIDGE_TOOLBAR_SIZE := Vector2(380.0, 380.0)
+const FRIDGE_TOOLBAR_SIZE := Vector2(500.0, 500.0)
 const FRIDGE_SETTINGS_SIZE := Vector2(250.0, 238.0)
-const FRIDGE_YARN_PILE_SIZE := Vector2(260.0, 160.0)
+const FRIDGE_YARN_PILE_SIZE := Vector2(342.0, 263.0)
 const FRIDGE_PANEL_FOLLOW_MARGIN := 72.0
 const FRIDGE_ITEM_HEADER_DRAG_HEIGHT := 22.0
+const FRIDGE_GALLERY_TITLE := "动作选项"
+const FRIDGE_GALLERY_PANEL_OFFSET := Vector2(-80.0, -330.0)
+const FRIDGE_GALLERY_PREVIEW_DURATION := 5.0
+const FRIDGE_BOX_POSITION := Vector2(-225.0, 172.0)
+const FRIDGE_BOX_DISPLAY_HEIGHT := 128.0
+const FRIDGE_BOX_TITLE := "道具箱"
+const FRIDGE_BOX_PANEL_OFFSET := Vector2(-160.0, -320.0)
+
+## Action/animation entries shown by the skeleton stand's gallery panel.
+## New performances just get appended here and mapped in
+## `_on_fridge_gallery_entry_pressed`.
+const FRIDGE_GALLERY_ENTRIES := [
+	{"id": "juggle", "name": "抛球杂耍", "icon": "res://assets/generated/paper_skeleton_juggle_icon.png"},
+]
+
+## Tossable objects shown in the prop box; clicking one swaps the object the
+## fridge man juggles (ball <-> tomato <-> future props).
+const FRIDGE_BOX_ENTRIES := [
+	{"id": "ball", "name": "球", "icon": "res://assets/generated/paper_juggle_ball.png"},
+	{"id": "tomato", "name": "番茄", "icon": "res://assets/generated/paper_tomato_projectile.png"},
+]
 
 var world: Node2D
 var camera: Camera2D
@@ -76,8 +103,16 @@ var fridge_item_panel_offset := Vector2.ZERO
 var fridge_settings_panel_has_manual_position := false
 var fridge_player_is_dragging := false
 var fridge_player_drag_offset := Vector2.ZERO
+# True while the pomodoro juggle performance (open fridge door -> reveal
+# tomatoes -> take out -> juggle loop) should play for the running work
+# session; auto-cleared when the session ends.
+var fridge_player_juggling := false
 var fridge_player: Node2D
 var fridge_cat_pet: Node2D
+var fridge_gallery_stand: Node2D
+var fridge_gallery_panel: PanelContainer
+var fridge_box: Node2D
+var fridge_box_panel: PanelContainer
 var fridge_coin_count := 0
 var fridge_owned_items: Array[String] = [FRIDGE_DEFAULT_VARIANT_ID]
 var fridge_active_item_id := FRIDGE_DEFAULT_VARIANT_ID
@@ -110,6 +145,28 @@ func _process(delta: float) -> void:
 	_update_fridge_yarn_pile(delta)
 	_update_fridge_coin_popups(delta)
 	_update_fridge_pomodoro(delta)
+	_update_fridge_player_form()
+
+
+func _update_fridge_player_form() -> void:
+	# The juggling performance only runs while its work session is active.
+	if fridge_player_juggling and fridge_phase != "work":
+		fridge_player_juggling = false
+	if fridge_player == null or not is_instance_valid(fridge_player):
+		return
+	fridge_player.call("set_pomodoro_juggle", fridge_player_juggling)
+
+
+func _is_ball_over_fridge_player(ball: Control) -> bool:
+	if fridge_player == null or not is_instance_valid(fridge_player):
+		return false
+	if ball == null or not is_instance_valid(ball):
+		return false
+	# The ball lives in the overlay CanvasLayer (screen space); map its center
+	# back into world space and test it against the player's hit rectangle.
+	var screen_center: Vector2 = ball.global_position + ball.size * 0.5
+	var world_center: Vector2 = get_viewport().get_canvas_transform().affine_inverse() * screen_center
+	return FRIDGE_PLAYER_DRAG_HIT_RECT.has_point(fridge_player.to_local(world_center))
 
 
 func _input(event: InputEvent) -> void:
@@ -153,6 +210,8 @@ func _build_level() -> void:
 	_load_fridge_progress()
 	_spawn_fridge_player()
 	_spawn_fridge_cat_pet()
+	_spawn_fridge_gallery_stand()
+	_spawn_fridge_box()
 	_create_fridge_overlay()
 	_refresh_fridge_ui()
 	is_changing_scene = false
@@ -174,6 +233,23 @@ func _spawn_fridge_cat_pet() -> void:
 	world.add_child(fridge_cat_pet)
 
 
+func _spawn_fridge_gallery_stand() -> void:
+	fridge_gallery_stand = ActionSkeletonStandScript.new()
+	fridge_gallery_stand.name = "ActionSkeletonStand"
+	fridge_gallery_stand.global_position = FRIDGE_GALLERY_STAND_POSITION
+	fridge_gallery_stand.toggled.connect(_on_fridge_gallery_stand_toggled)
+	world.add_child(fridge_gallery_stand)
+
+
+func _spawn_fridge_box() -> void:
+	fridge_box = FridgeChestScript.new()
+	fridge_box.name = "PropBox"
+	fridge_box.call("set", "display_height", FRIDGE_BOX_DISPLAY_HEIGHT)
+	fridge_box.global_position = FRIDGE_BOX_POSITION
+	fridge_box.toggled.connect(_on_fridge_box_toggled)
+	world.add_child(fridge_box)
+
+
 func _clear_world() -> void:
 	if world == null:
 		return
@@ -181,6 +257,8 @@ func _clear_world() -> void:
 		child.queue_free()
 	fridge_player = null
 	fridge_cat_pet = null
+	fridge_gallery_stand = null
+	fridge_box = null
 	fridge_round_choice_root = null
 
 
@@ -208,6 +286,8 @@ func _clear_overlay() -> void:
 	fridge_overlay_root = null
 	fridge_item_panel = null
 	fridge_settings_panel = null
+	fridge_gallery_panel = null
+	fridge_box_panel = null
 	fridge_coin_label = null
 	fridge_status_label = null
 	fridge_timer_label = null
@@ -233,6 +313,7 @@ func _clear_overlay() -> void:
 	fridge_settings_panel_has_manual_position = false
 	fridge_player_is_dragging = false
 	fridge_player_drag_offset = Vector2.ZERO
+	fridge_player_juggling = false
 
 
 func _create_fridge_overlay() -> void:
@@ -251,6 +332,8 @@ func _create_fridge_overlay() -> void:
 
 	_create_fridge_item_toolbar()
 	_create_fridge_settings_panel()
+	_create_fridge_gallery_panel()
+	_create_fridge_box_panel()
 	_position_fridge_popups()
 
 
@@ -281,10 +364,12 @@ func _create_fridge_item_toolbar() -> void:
 	fridge_item_panel.custom_minimum_size = FRIDGE_TOOLBAR_SIZE
 	fridge_item_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var transparent_style := StyleBoxEmpty.new()
-	transparent_style.content_margin_left = 60.0
-	transparent_style.content_margin_top = 110.0
-	transparent_style.content_margin_right = 60.0
-	transparent_style.content_margin_bottom = 50.0
+	# Margins scale with the panel (500px) so the pile still sits inside the
+	# cat mouth art, which is stretched to the full panel size.
+	transparent_style.content_margin_left = 79.0
+	transparent_style.content_margin_top = 145.0
+	transparent_style.content_margin_right = 79.0
+	transparent_style.content_margin_bottom = 66.0
 	fridge_item_panel.add_theme_stylebox_override("panel", transparent_style)
 	fridge_overlay_root.add_child(fridge_item_panel)
 
@@ -407,6 +492,90 @@ func _create_fridge_settings_panel() -> void:
 	action_row.add_child(fridge_reset_button)
 
 
+## The skeleton stand's action gallery panel (reusable addon component):
+## shows the fridge man's animation performances; clicking an entry makes
+## him perform it.
+func _create_fridge_gallery_panel() -> void:
+	fridge_gallery_panel = ActionGalleryPanelScript.new()
+	fridge_gallery_panel.name = "ActionGalleryPanel"
+	fridge_gallery_panel.visible = false
+	fridge_overlay_root.add_child(fridge_gallery_panel)
+	fridge_gallery_panel.call("setup", FRIDGE_GALLERY_TITLE, FRIDGE_GALLERY_ENTRIES)
+	fridge_gallery_panel.entry_pressed.connect(_on_fridge_gallery_entry_pressed)
+
+
+func _on_fridge_gallery_stand_toggled(open: bool) -> void:
+	if fridge_gallery_panel == null:
+		return
+	# Only one of the two left-side panels is shown at a time.
+	if open:
+		_close_fridge_box(false)
+	fridge_gallery_panel.visible = open
+	if open and fridge_gallery_stand != null and is_instance_valid(fridge_gallery_stand):
+		var stand_screen: Vector2 = get_viewport().get_canvas_transform() * fridge_gallery_stand.global_position
+		fridge_gallery_panel.call("popup_at", stand_screen + FRIDGE_GALLERY_PANEL_OFFSET)
+
+
+func _on_fridge_gallery_entry_pressed(entry_id: String) -> void:
+	# Each gallery entry maps to a reaction the fridge man performs.
+	match entry_id:
+		"juggle":
+			if fridge_player != null and is_instance_valid(fridge_player):
+				fridge_player.call("play_juggle_preview", FRIDGE_GALLERY_PREVIEW_DURATION)
+		_:
+			pass
+
+
+## The prop box (reuses the chest art): picking an object swaps what the
+## fridge man juggles — live, even mid-performance.
+func _create_fridge_box_panel() -> void:
+	fridge_box_panel = ActionGalleryPanelScript.new()
+	fridge_box_panel.name = "PropBoxPanel"
+	fridge_box_panel.visible = false
+	fridge_overlay_root.add_child(fridge_box_panel)
+	fridge_box_panel.call("setup", FRIDGE_BOX_TITLE, FRIDGE_BOX_ENTRIES)
+	fridge_box_panel.entry_pressed.connect(_on_fridge_box_entry_pressed)
+
+
+func _on_fridge_box_toggled(open: bool) -> void:
+	if fridge_box_panel == null:
+		return
+	# Only one of the two left-side panels is shown at a time.
+	if open:
+		_close_fridge_gallery(false)
+	fridge_box_panel.visible = open
+	if open and fridge_box != null and is_instance_valid(fridge_box):
+		var box_screen: Vector2 = get_viewport().get_canvas_transform() * fridge_box.global_position
+		fridge_box_panel.call("popup_at", box_screen + FRIDGE_BOX_PANEL_OFFSET)
+
+
+func _on_fridge_box_entry_pressed(entry_id: String) -> void:
+	match entry_id:
+		"ball", "tomato":
+			if fridge_player != null and is_instance_valid(fridge_player):
+				fridge_player.call("set_juggle_projectile", entry_id)
+		_:
+			pass
+
+
+## Closes the skeleton stand's gallery panel (and syncs the stand art state)
+## without emitting its toggle signal.
+func _close_fridge_gallery(animate_stand: bool) -> void:
+	if fridge_gallery_panel != null:
+		fridge_gallery_panel.visible = false
+	if fridge_gallery_stand != null and is_instance_valid(fridge_gallery_stand):
+		fridge_gallery_stand.call("set_open", false, animate_stand)
+
+
+## Closes the prop box panel (and syncs the chest art state) without
+## emitting its toggle signal.
+func _close_fridge_box(animate_box: bool) -> void:
+	if fridge_box_panel != null:
+		fridge_box_panel.visible = false
+	if fridge_box != null and is_instance_valid(fridge_box):
+		fridge_box.call("set_open", false, animate_box)
+
+
 func _create_fridge_yarn_ball(item: Dictionary, index: int) -> void:
 	if fridge_yarn_pile == null:
 		return
@@ -422,12 +591,12 @@ func _create_fridge_yarn_ball(item: Dictionary, index: int) -> void:
 	fridge_yarn_balls.append(ball)
 
 	var centers := [
-		Vector2(28.0, 35.0),
-		Vector2(68.0, 24.0),
-		Vector2(108.0, 36.0),
-		Vector2(150.0, 25.0),
-		Vector2(190.0, 38.0),
-		Vector2(90.0, 72.0),
+		Vector2(37.0, 58.0),
+		Vector2(90.0, 39.0),
+		Vector2(142.0, 59.0),
+		Vector2(197.0, 41.0),
+		Vector2(250.0, 62.0),
+		Vector2(118.0, 118.0),
 	]
 	var center: Vector2 = centers[index % centers.size()]
 	if index >= centers.size():
@@ -864,7 +1033,10 @@ func _handle_fridge_yarn_drag(event: InputEvent) -> bool:
 
 	if event is InputEventMouseMotion:
 		var mouse_motion := event as InputEventMouseMotion
-		fridge_dragged_yarn_ball.global_position = get_viewport().get_mouse_position() - fridge_yarn_drag_offset
+		# Follow the pointer via `relative` rather than absolute mouse position:
+		# it is always accurate, including for synthetic/warped motion events
+		# whose position field can lag behind the actual cursor.
+		fridge_dragged_yarn_ball.global_position += mouse_motion.relative
 		fridge_yarn_drag_release_velocity = mouse_motion.relative * 8.0
 		return true
 
@@ -874,6 +1046,9 @@ func _handle_fridge_yarn_drag(event: InputEvent) -> bool:
 			var dragged_ball := fridge_dragged_yarn_ball
 			var item_id := str(dragged_ball.call("get_item_id"))
 			var dropped_outside := not (_get_fridge_yarn_mouth_global_rect().has_point(dragged_ball.global_position + dragged_ball.size * 0.5))
+			# Capture the "placed onto the fridge person" state NOW: returning
+			# the ball to the pile below would reset its position first.
+			var dropped_on_player := dropped_outside and _is_ball_over_fridge_player(dragged_ball)
 			_return_fridge_yarn_ball_to_pile(dragged_ball, not dropped_outside)
 			fridge_dragged_yarn_ball = null
 
@@ -883,6 +1058,11 @@ func _handle_fridge_yarn_drag(event: InputEvent) -> bool:
 					fridge_item_panel.scale = Vector2.ONE
 				if fridge_cat_pet != null and is_instance_valid(fridge_cat_pet):
 					fridge_cat_pet.call("set_bag_open", false)
+				# Placing the tomato directly onto the fridge person starts the
+				# pomodoro juggle performance (open door -> reveal tomatoes ->
+				# take out -> juggle) for this session.
+				if item_id == "tomato" and dropped_on_player:
+					fridge_player_juggling = true
 				_start_fridge_item_from_inventory(item_id)
 			return true
 
@@ -1034,6 +1214,18 @@ func _position_fridge_popups() -> void:
 		var settings_position: Vector2 = _clamp_fridge_panel_position(fridge_settings_panel, screen_position + Vector2(300.0, -252.0))
 		fridge_settings_panel.position = settings_position
 		fridge_settings_panel.size = FRIDGE_SETTINGS_SIZE
+
+	# The left-side panels stay anchored to their (draggable) props, so they
+	# follow along when the skeleton stand or the prop box gets moved.
+	if fridge_gallery_panel != null and fridge_gallery_panel.visible \
+			and fridge_gallery_stand != null and is_instance_valid(fridge_gallery_stand):
+		var stand_screen: Vector2 = get_viewport().get_canvas_transform() * fridge_gallery_stand.global_position
+		fridge_gallery_panel.call("popup_at", stand_screen + FRIDGE_GALLERY_PANEL_OFFSET)
+
+	if fridge_box_panel != null and fridge_box_panel.visible \
+			and fridge_box != null and is_instance_valid(fridge_box):
+		var box_screen: Vector2 = get_viewport().get_canvas_transform() * fridge_box.global_position
+		fridge_box_panel.call("popup_at", box_screen + FRIDGE_BOX_PANEL_OFFSET)
 
 
 func _on_fridge_panel_drag_handle_input(event: InputEvent, panel: Control, panel_id: String) -> void:

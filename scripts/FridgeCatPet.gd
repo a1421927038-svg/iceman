@@ -64,9 +64,11 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion:
-		var mouse_motion := event as InputEventMouseMotion
 		global_position = get_global_mouse_position() + drag_offset
-		drag_distance += mouse_motion.relative.length()
+		# Track how far the cursor strayed from the press point (position based).
+		# Accumulating `relative` lengths misfires on warped/synthetic motion
+		# events that carry large deltas while the cursor stays put.
+		drag_distance = maxf(drag_distance, drag_start_mouse.distance_to(get_viewport().get_mouse_position()))
 		get_viewport().set_input_as_handled()
 		return
 

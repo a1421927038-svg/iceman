@@ -6,6 +6,7 @@ signal activated(item_id: String)
 var item_id := "tomato"
 var unlocked := true
 var active := false
+var icon_texture: Texture2D
 
 
 func setup(new_item_id: String, is_unlocked: bool) -> void:
@@ -13,7 +14,19 @@ func setup(new_item_id: String, is_unlocked: bool) -> void:
 	unlocked = is_unlocked
 	custom_minimum_size = Vector2(52.0, 52.0)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	_load_icon()
 	queue_redraw()
+
+
+func _load_icon() -> void:
+	var path := "res://assets/generated/paper_icon_%s.png" % item_id
+	if ResourceLoader.exists(path):
+		icon_texture = load(path) as Texture2D
+	else:
+		var file_path := ProjectSettings.globalize_path(path)
+		var img := Image.new()
+		if img.load(file_path) == OK and not img.is_empty():
+			icon_texture = ImageTexture.create_from_image(img)
 
 
 func set_unlocked(is_unlocked: bool) -> void:
@@ -37,28 +50,38 @@ func _gui_input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	var alpha: float = 1.0 if unlocked else 0.42
-	var bg_color := Color(0.12, 0.15, 0.15, 0.82 * alpha)
-	var border_color := Color(1.0, 1.0, 1.0, 0.18 * alpha)
+	# Paper craft card style for shop list item
+	var bg_color := Color(0.96, 0.93, 0.86, 0.88 * alpha)
+	var border_color := Color(0.82, 0.76, 0.64, 0.95 * alpha)
 	if active:
-		bg_color = Color(0.22, 0.32, 0.30, 0.96)
-		border_color = Color(1.0, 0.84, 0.28, 0.95)
+		bg_color = Color(1.0, 0.96, 0.82, 0.98)
+		border_color = Color(0.96, 0.74, 0.22, 0.98)
+	
+	# Drop shadow
+	draw_rect(Rect2(Vector2(1.0, 2.0), size), Color(0.0, 0.0, 0.0, 0.18 * alpha), true)
+	# Card base
 	draw_rect(Rect2(Vector2.ZERO, size), bg_color, true)
-	draw_rect(Rect2(Vector2(2.0, 2.0), size - Vector2(4.0, 4.0)), border_color, false, 3.0 if active else 2.0)
-	var center: Vector2 = size * 0.5
+	draw_rect(Rect2(Vector2(1.0, 1.0), size - Vector2(2.0, 2.0)), border_color, false, 2.0 if active else 1.2)
 
-	match item_id:
-		"cassette":
-			_draw_cassette(center, alpha)
-		"pager":
-			_draw_pager(center, alpha)
-		"walkman":
-			_draw_walkman(center, alpha)
-		"crt":
-			_draw_crt(center, alpha)
-		"vhs":
-			_draw_vhs(center, alpha)
-		_:
-			_draw_tomato(center, alpha)
+	var center: Vector2 = size * 0.5
+	if icon_texture != null:
+		var icon_size := Vector2(38.0, 38.0)
+		var icon_rect := Rect2(center - icon_size * 0.5, icon_size)
+		draw_texture_rect(icon_texture, icon_rect, false, Color(1.0, 1.0, 1.0, alpha))
+	else:
+		match item_id:
+			"cassette":
+				_draw_cassette(center, alpha)
+			"pager":
+				_draw_pager(center, alpha)
+			"walkman":
+				_draw_walkman(center, alpha)
+			"crt":
+				_draw_crt(center, alpha)
+			"vhs":
+				_draw_vhs(center, alpha)
+			_:
+				_draw_tomato(center, alpha)
 
 
 func _draw_tomato(center: Vector2, alpha: float) -> void:

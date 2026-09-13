@@ -1,0 +1,58 @@
+{
+	"animation_name": "juggling_the_red_tomatoes_in_a_continuous_circle_arms_swinging_tomatoes_flying_around_in_the_oval_orbit_happy_bouncing",
+	"animation_style": "",
+	"animation_type": "juggling the red tomatoes in a continuous circle, arms swinging, tomatoes flying around in the oval orbit, happy bouncing",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "paper_fridge_juggle_loop",
+	"prompt": "juggling the red tomatoes in a continuous circle, arms swinging, tomatoes flying around in the oval orbit, happy bouncing",
+	"rows": 1,
+	"source_image": "res://assets/generated/paper_fridge_kf_juggle_base.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/paper_fridge_juggle_loop.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}
