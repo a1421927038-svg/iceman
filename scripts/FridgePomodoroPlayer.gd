@@ -7,6 +7,12 @@ extends CharacterBody2D
 @export var animation_fps := 3.0
 @export var display_height := 320.0
 
+## Emitted when a performance preview (juggle replay or rest) ends naturally
+## after its timer runs out. The host level uses this to bring the post-round
+## choice buttons back, so the player can pick again. Not emitted when a
+## performance is replaced or stopped (new session, reset, mutual swap).
+signal performance_finished
+
 # Pomodoro juggle sequence, triggered by placing the tomato item from the
 # cat mouth onto the player: open own fridge door -> reveal the tomatoes
 # inside the belly -> take them out -> start juggling them in a loop.
@@ -27,6 +33,16 @@ const INTRO_FRAME_SIZE := Vector2i(512, 512)
 # reference): they rise from a hand, hover above the head and fall back —
 # no orbiting around the body.
 const JUGGLE_BASE_PATH := "res://assets/generated/paper_fridge_kf_juggle_base_v3.png"
+
+# Rest performance: after a work round finishes, the right button plays this
+# Gemini-generated exhausted-panting loop (bent over, hands on knees, sweat
+# drops flying). The atlas holds three 512px frames; they are ping-ponged
+# (1-2-3-2) at load time so the breathing heave eases instead of snapping.
+const REST_ANIMATION_NAME := "pomodoro_rest"
+const REST_ATLAS_PATH := "res://assets/generated/paper_fridge_rest_pant.png"
+const REST_FRAME_SIZE := Vector2i(512, 512)
+const REST_ANIMATION_FPS := 5.5
+
 const JUGGLE_FRAME_SIZE := Vector2i(512, 512)
 const JUGGLE_OBJECT_SCALE := 0.62
 # Measured from the base art: where the raised open palms are.
@@ -66,6 +82,9 @@ var juggle_motion := 0.0
 var juggle_projectile_id := "ball"
 var juggle_objects: Array[Sprite2D] = []
 var animated_sprite: AnimatedSprite2D
+# Rest performance state: a timed preview of the panting animation.
+var resting := false
+var rest_preview_timer := 0.0
 
 
 func _ready() -> void:
@@ -83,12 +102,23 @@ func _process(delta: float) -> void:
 		if juggle_preview_timer <= 0.0:
 			juggle_preview_timer = 0.0
 			_update_juggle_state()
+			performance_finished.emit()
+	if rest_preview_timer > 0.0:
+		rest_preview_timer -= delta
+		if rest_preview_timer <= 0.0:
+			rest_preview_timer = 0.0
+			_update_rest_state()
+			performance_finished.emit()
 	if juggling:
 		juggle_motion += delta
 		_update_juggle_motion()
-	# Gentle body bob while juggling; fixed base position otherwise.
+	# Gentle body bob while juggling; slower breathing sway while resting.
 	if animated_sprite != null and is_instance_valid(animated_sprite):
-		var bob: float = sin(item_elapsed * 5.0) * 3.0 if juggling else 0.0
+		var bob := 0.0
+		if juggling:
+			bob = sin(item_elapsed * 5.0) * 3.0
+		elif resting:
+			bob = sin(item_elapsed * 3.0) * 2.0
 		animated_sprite.position = SPRITE_BASE_POSITION + Vector2(0.0, bob)
 	queue_redraw()
 
@@ -124,11 +154,39 @@ func set_pomodoro_juggle(enabled: bool) -> void:
 func play_juggle_preview(duration: float) -> void:
 	if duration <= 0.0:
 		return
+	# The juggle replaces a running rest performance.
+	if rest_preview_timer > 0.0:
+		rest_preview_timer = 0.0
+		_update_rest_state()
 	if juggle_preview_timer <= 0.0:
 		juggle_preview_timer = duration
 		_update_juggle_state()
 	else:
 		juggle_preview_timer = maxf(juggle_preview_timer, duration)
+
+
+## Timed preview of the Gemini-generated exhausted rest animation (bent over,
+## hands on knees, heavy panting). Replaces a running juggle performance.
+func play_rest_preview(duration: float) -> void:
+	if duration <= 0.0:
+		return
+	if juggle_preview_timer > 0.0:
+		juggle_preview_timer = 0.0
+		_update_juggle_state()
+	if rest_preview_timer <= 0.0:
+		rest_preview_timer = duration
+		_update_rest_state()
+	else:
+		rest_preview_timer = maxf(rest_preview_timer, duration)
+
+
+## Stop any timed performance preview (rest or juggle); used when a new
+## pomodoro session starts so the character snaps back to idle.
+func stop_performances() -> void:
+	juggle_preview_timer = 0.0
+	rest_preview_timer = 0.0
+	_update_juggle_state()
+	_update_rest_state()
 
 
 ## Swap the object being juggled (ball <-> tomato <-> future objects).
@@ -153,6 +211,8 @@ func _update_juggle_state() -> void:
 		return
 	if should_juggle and not animated_sprite.sprite_frames.has_animation(INTRO_ANIMATION_NAME):
 		return
+	if should_juggle and resting:
+		resting = false
 
 	juggling = should_juggle
 	if juggling:
@@ -160,6 +220,25 @@ func _update_juggle_state() -> void:
 	for object_sprite: Sprite2D in juggle_objects:
 		if object_sprite != null and is_instance_valid(object_sprite):
 			object_sprite.visible = juggling
+	_play_current_animation()
+
+
+## Single source of truth for the visual rest (panting) state.
+func _update_rest_state() -> void:
+	var should_rest := rest_preview_timer > 0.0
+	if resting == should_rest:
+		return
+	if animated_sprite == null or not is_instance_valid(animated_sprite):
+		return
+	if should_rest and not animated_sprite.sprite_frames.has_animation(REST_ANIMATION_NAME):
+		return
+	if should_rest and juggling:
+		juggling = false
+		for object_sprite: Sprite2D in juggle_objects:
+			if object_sprite != null and is_instance_valid(object_sprite):
+				object_sprite.visible = false
+
+	resting = should_rest
 	_play_current_animation()
 
 
@@ -194,7 +273,10 @@ func _update_juggle_motion() -> void:
 
 
 func _play_current_animation() -> void:
-	if juggling:
+	if resting:
+		_set_sprite_scale_for(REST_FRAME_SIZE)
+		animated_sprite.animation = REST_ANIMATION_NAME
+	elif juggling:
 		_set_sprite_scale_for(INTRO_FRAME_SIZE)
 		animated_sprite.animation = INTRO_ANIMATION_NAME
 	else:
@@ -218,8 +300,8 @@ func _set_sprite_scale_for(source_frame_size: Vector2i) -> void:
 
 
 func _draw() -> void:
-	# While juggling, the animation replaces the plain countdown ring.
-	if phase == "idle" or juggling:
+	# While juggling or resting, the animation replaces the plain countdown ring.
+	if phase == "idle" or juggling or resting:
 		return
 
 	var ring_center: Vector2 = Vector2(0.0, -145.0)
@@ -320,6 +402,7 @@ func _create_animation() -> void:
 	_add_sheet_animation(frames, IDLE_ANIMATION_NAME, texture, frame_count, frame_size, animation_fps, true)
 	_add_intro_animation(frames)
 	_add_juggle_animation(frames)
+	_add_rest_animation(frames)
 
 	animated_sprite = AnimatedSprite2D.new()
 	animated_sprite.name = "Sprite"
@@ -364,6 +447,29 @@ func _add_juggle_animation(frames: SpriteFrames) -> void:
 	frames.set_animation_loop(JUGGLE_ANIMATION_NAME, true)
 	frames.add_frame(JUGGLE_ANIMATION_NAME, juggle_texture)
 	_create_juggle_objects()
+
+
+## Rest: the Gemini-generated exhausted-panting atlas (three 512px frames in
+## one row). Frames are ping-ponged 1-2-3-2 so the breathing cycle eases back
+## down instead of snapping to the first frame.
+func _add_rest_animation(frames: SpriteFrames) -> void:
+	var rest_texture: Texture2D = _load_texture(REST_ATLAS_PATH)
+	if rest_texture == null:
+		push_warning("Pomodoro rest atlas not found: %s" % REST_ATLAS_PATH)
+		return
+	frames.add_animation(REST_ANIMATION_NAME)
+	frames.set_animation_speed(REST_ANIMATION_NAME, REST_ANIMATION_FPS)
+	frames.set_animation_loop(REST_ANIMATION_NAME, true)
+	for frame_index in [0, 1, 2, 1]:
+		var atlas_texture := AtlasTexture.new()
+		atlas_texture.atlas = rest_texture
+		atlas_texture.region = Rect2(
+			int(frame_index) * REST_FRAME_SIZE.x,
+			0,
+			REST_FRAME_SIZE.x,
+			REST_FRAME_SIZE.y
+		)
+		frames.add_frame(REST_ANIMATION_NAME, atlas_texture)
 
 
 ## Creates the swappable flying objects using the currently selected

@@ -1,0 +1,40 @@
+{
+	"animation_name": "exhausted_heavy_panting_the_fridge_man_stays_bent_forward_with_hands_on_knees_while_his_chest_and_shoulders_heave_deeply_with_each_breath_tongue_and_mouth_wobbling_sweat_drops_popping_off_his_head_character_otherwise_staying_in_place",
+	"animation_style": "",
+	"animation_type": "exhausted heavy panting: the fridge man stays bent forward with hands on knees while his chest and shoulders heave deeply with each breath, tongue and mouth wobbling, sweat drops popping off his head, character otherwise staying in place",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "paper_fridge_rest_pant",
+	"prompt": "exhausted heavy panting: the fridge man stays bent forward with hands on knees while his chest and shoulders heave deeply with each breath, tongue and mouth wobbling, sweat drops popping off his head, character otherwise staying in place",
+	"rows": 1,
+	"source_image": "res://assets/generated/paper_fridge_rest_base.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/paper_fridge_rest_pant.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

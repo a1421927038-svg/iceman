@@ -51,6 +51,11 @@ const FRIDGE_ITEM_HEADER_DRAG_HEIGHT := 22.0
 const FRIDGE_GALLERY_TITLE := "动作选项"
 const FRIDGE_GALLERY_PANEL_OFFSET := Vector2(-80.0, -330.0)
 const FRIDGE_GALLERY_PREVIEW_DURATION := 5.0
+# After a work round's countdown finishes, the two choice buttons appear:
+# the left (devil) button replays the previous performance (the juggle), the
+# right (angel) button plays the Gemini-generated exhausted rest animation.
+const FRIDGE_REPLAY_PREVIEW_DURATION := 8.0
+const FRIDGE_REST_PREVIEW_DURATION := 8.0
 const FRIDGE_BOX_POSITION := Vector2(-225.0, 172.0)
 const FRIDGE_BOX_DISPLAY_HEIGHT := 128.0
 const FRIDGE_BOX_TITLE := "道具箱"
@@ -84,6 +89,10 @@ var fridge_timer_label: Label
 var fridge_reward_label: Label
 var fridge_reset_button: Button
 var fridge_round_choice_root: Node2D
+# True while the post-round choice flow is active: the two head buttons keep
+# re-appearing after each replay performance finishes, until a new pomodoro
+# round starts (or the level resets).
+var fridge_round_choices_pending := false
 var fridge_shop_list: VBoxContainer
 var fridge_yarn_pile: Control
 var fridge_yarn_balls: Array[Control] = []
@@ -221,6 +230,7 @@ func _spawn_fridge_player() -> void:
 	fridge_player = FridgePomodoroPlayerScript.new()
 	fridge_player.name = "Player"
 	fridge_player.global_position = Vector2(0.0, 170.0)
+	fridge_player.performance_finished.connect(_on_fridge_performance_finished)
 	world.add_child(fridge_player)
 
 
@@ -852,7 +862,10 @@ func _update_fridge_pomodoro(delta: float) -> void:
 func _start_fridge_session() -> void:
 	if fridge_phase != "idle":
 		return
+	fridge_round_choices_pending = false
 	_clear_fridge_round_choices()
+	if fridge_player != null and is_instance_valid(fridge_player):
+		fridge_player.call("stop_performances")
 	fridge_phase = "work"
 	fridge_time_left = fridge_work_duration
 	_refresh_fridge_ui()
@@ -862,6 +875,10 @@ func _show_fridge_round_choices() -> void:
 	_clear_fridge_round_choices()
 	if fridge_player == null or not is_instance_valid(fridge_player):
 		return
+	# A completed round keeps offering the two buttons: every replay
+	# performance ends with them popping up again (see
+	# _on_fridge_performance_finished), until a new round starts.
+	fridge_round_choices_pending = true
 
 	fridge_round_choice_root = Node2D.new()
 	fridge_round_choice_root.name = "RoundChoiceRoot"
@@ -898,16 +915,24 @@ func _clear_fridge_round_choices() -> void:
 
 func _on_fridge_round_choice_selected(choice_id: String) -> void:
 	_clear_fridge_round_choices()
+	if fridge_player == null or not is_instance_valid(fridge_player):
+		return
 	match choice_id:
 		"devil":
-			_start_fridge_session()
+			# Left button: keep playing the previous performance (the juggle).
+			fridge_player.call("play_juggle_preview", FRIDGE_REPLAY_PREVIEW_DURATION)
 		"angel":
-			fridge_phase = "idle"
-			fridge_time_left = 0.0
-			_save_fridge_progress()
-			_refresh_fridge_ui()
+			# Right button: play the exhausted, panting rest animation.
+			fridge_player.call("play_rest_preview", FRIDGE_REST_PREVIEW_DURATION)
 		_:
 			pass
+
+
+## When a replay performance ends naturally, bring the two head buttons back
+## so the player can choose again (left: watch once more, right: rest).
+func _on_fridge_performance_finished() -> void:
+	if fridge_round_choices_pending:
+		_show_fridge_round_choices()
 
 
 func _reset_fridge_session() -> void:
@@ -918,7 +943,10 @@ func _reset_fridge_session() -> void:
 func _reset_fridge_runtime() -> void:
 	fridge_phase = "idle"
 	fridge_time_left = 0.0
+	fridge_round_choices_pending = false
 	_clear_fridge_round_choices()
+	if fridge_player != null and is_instance_valid(fridge_player):
+		fridge_player.call("stop_performances")
 
 
 func _on_fridge_reset_pressed() -> void:
