@@ -1,0 +1,58 @@
+{
+	"animation_name": "running_fast_to_the_right_on_all_four_legs_a_bounding_gallop_with_the_four_legs_swinging_forward_and_back_in_alternation_body_rising_and_dipping_with_each_bound_tail_streaming_up_behind_it_ears_back",
+	"animation_style": "",
+	"animation_type": "running fast to the right on all four legs, a bounding gallop with the four legs swinging forward and back in alternation, body rising and dipping with each bound, tail streaming up behind it, ears back",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "cat_run_v2",
+	"prompt": "running fast to the right on all four legs, a bounding gallop with the four legs swinging forward and back in alternation, body rising and dipping with each bound, tail streaming up behind it, ears back",
+	"rows": 1,
+	"source_image": "res://assets/generated/cat_side_base.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/cat_run_v2.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

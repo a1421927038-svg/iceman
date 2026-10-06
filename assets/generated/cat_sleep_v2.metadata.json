@@ -1,0 +1,58 @@
+{
+	"animation_name": "a_curled_up_sleeping_cat_breathing_gently_in_its_sleep_its_ear_twitching_its_tail_tip_flicking_a_content_smile_on_its_face_it_stays_curled_in_exactly_the_same_place_in_the_middle_of_the_frame",
+	"animation_style": "",
+	"animation_type": "a curled-up sleeping cat breathing gently in its sleep, its ear twitching, its tail tip flicking, a content smile on its face; it stays curled in exactly the same place in the middle of the frame",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "cat_sleep_v2",
+	"prompt": "a curled-up sleeping cat breathing gently in its sleep, its ear twitching, its tail tip flicking, a content smile on its face; it stays curled in exactly the same place in the middle of the frame",
+	"rows": 1,
+	"source_image": "res://tests/_base_sleep_1.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/cat_sleep_v2.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

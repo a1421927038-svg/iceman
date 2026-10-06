@@ -1,0 +1,40 @@
+{
+	"animation_name": "holding_a_small_clay_pipe_in_one_hand_puffing_on_it_and_blowing_out_three_round_smoke_rings_that_drift_up_and_float_away_into_the_air",
+	"animation_style": "",
+	"animation_type": "holding a small clay pipe in one hand, puffing on it and blowing out three round smoke rings that drift up and float away into the air",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "paper_fridge_smoke_rings",
+	"prompt": "holding a small clay pipe in one hand, puffing on it and blowing out three round smoke rings that drift up and float away into the air",
+	"rows": 1,
+	"source_image": "res://assets/generated/idle_base.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/paper_fridge_smoke_rings.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

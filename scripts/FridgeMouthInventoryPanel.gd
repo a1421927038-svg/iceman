@@ -20,16 +20,15 @@ func _draw() -> void:
 
 
 func _load_texture(texture_path: String) -> Texture2D:
+	# DISK FIRST: the mouth panel is rewritten in place whenever the cat is
+	# re-skinned, and `load()` keeps serving the OLD imported texture until the
+	# editor re-imports it (the same trap FridgeCatNose/FridgeCatPet document).
+	if FileAccess.file_exists(texture_path):
+		var image: Image = Image.load_from_file(ProjectSettings.globalize_path(texture_path))
+		if image != null and not image.is_empty():
+			return ImageTexture.create_from_image(image)
+
 	if ResourceLoader.exists(texture_path):
 		return load(texture_path) as Texture2D
-
-	var file_path := texture_path
-	if texture_path.begins_with("res://") or texture_path.begins_with("user://"):
-		file_path = ProjectSettings.globalize_path(texture_path)
-
-	var image := Image.new()
-	var error := image.load(file_path)
-	if error == OK and not image.is_empty():
-		return ImageTexture.create_from_image(image)
 
 	return null

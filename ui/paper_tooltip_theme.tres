@@ -1,0 +1,25 @@
+[gd_resource type="Theme" load_steps=2 format=3]
+
+; Project tooltip theme: replaces the engine's default black TooltipPanel
+; background with a cream paper card — rounded corners and a warm cut-paper edge
+; — so hover tooltips match the collage art. Only TooltipPanel is overridden;
+; every other control still falls back to the default theme.
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_paper_tooltip"]
+content_margin_left = 15.0
+content_margin_top = 9.0
+content_margin_right = 15.0
+content_margin_bottom = 11.0
+bg_color = Color(0.996, 0.972, 0.906, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.28, 0.2, 0.92)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[resource]
+TooltipPanel/styles/panel = SubResource("StyleBoxFlat_paper_tooltip")

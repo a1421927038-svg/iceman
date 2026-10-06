@@ -1,0 +1,40 @@
+{
+	"animation_name": "calmly_smoking_a_small_clay_pipe_held_steadily_at_the_mouth_the_whole_body_staying_still_just_blowing_out_round_smoke_rings_that_grow_and_drift_up_into_the_air_above_his_head",
+	"animation_style": "",
+	"animation_type": "calmly smoking a small clay pipe held steadily at the mouth, the whole body staying still, just blowing out round smoke rings that grow and drift up into the air above his head",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "paper_fridge_smoke_rings_b",
+	"prompt": "calmly smoking a small clay pipe held steadily at the mouth, the whole body staying still, just blowing out round smoke rings that grow and drift up into the air above his head",
+	"rows": 1,
+	"source_image": "res://assets/generated/idle_base.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/paper_fridge_smoke_rings_b.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

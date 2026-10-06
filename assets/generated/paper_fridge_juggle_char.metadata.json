@@ -1,0 +1,40 @@
+{
+	"animation_name": "juggling_with_vigorous_exaggerated_cartoon_motion_the_whole_body_bounces_up_and_down_knees_bend_and_straighten_the_left_and_right_arms_swing_alternately_up_and_down_the_torso_and_head_squash_and_stretch_with_each_bounce_like_classic_disney_animation_hands_stay_completely_empty_with_no_objects_keep_the_exact_same_character_design_colours_face_and_paper_craft_collage_style_in_every_frame",
+	"animation_style": "",
+	"animation_type": "juggling with vigorous, exaggerated cartoon motion: the whole body bounces up and down, knees bend and straighten, the left and right arms swing alternately up and down, the torso and head squash and stretch with each bounce like classic Disney animation. Hands stay completely EMPTY with no objects. Keep the exact same character design, colours, face and paper-craft collage style in every frame.",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "paper_fridge_juggle_char",
+	"prompt": "juggling with vigorous, exaggerated cartoon motion: the whole body bounces up and down, knees bend and straighten, the left and right arms swing alternately up and down, the torso and head squash and stretch with each bounce like classic Disney animation. Hands stay completely EMPTY with no objects. Keep the exact same character design, colours, face and paper-craft collage style in every frame.",
+	"rows": 1,
+	"source_image": "res://assets/generated/paper_fridge_kf_juggle_base_v3.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/paper_fridge_juggle_char.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

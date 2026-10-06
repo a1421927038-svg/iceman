@@ -1,0 +1,40 @@
+{
+	"animation_name": "standing_still_and_smoking_his_pipe_puffing_small_smoke_rings_out_of_the_pipe_up_beside_his_head",
+	"animation_style": "",
+	"animation_type": "standing still and smoking his pipe, puffing small smoke rings out of the pipe up beside his head",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 410,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 410,
+			"w": 248,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 410,
+			"w": 248,
+			"x": 248,
+			"y": 0
+		},
+		{
+			"h": 410,
+			"w": 248,
+			"x": 496,
+			"y": 0
+		}
+	],
+	"frame_width": 248,
+	"name": "paper_fridge_smoke_v2",
+	"prompt": "standing still and smoking his pipe, puffing small smoke rings out of the pipe up beside his head",
+	"rows": 1,
+	"source_image": "res://assets/generated/_smoke_source.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 410,
+	"spritesheet_path": "res://assets/generated/paper_fridge_smoke_v2.png",
+	"spritesheet_width": 744,
+	"type": "animation"
+}

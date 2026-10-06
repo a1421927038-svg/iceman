@@ -20,6 +20,10 @@ config/icon="res://icon.png"
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[gui]
+
+theme/custom="res://ui/paper_tooltip_theme.tres"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"

@@ -1,0 +1,58 @@
+{
+	"animation_name": "walking_on_all_four_legs_to_the_right_a_steady_four_legged_walk_cycle_seen_in_profile_the_four_legs_step_forward_and_back_in_alternation_the_front_legs_swinging_from_the_shoulders_the_back_legs_swinging_from_the_hips_the_cat_s_head_and_body_stay_in_exactly_the_same_place_in_the_middle_of_the_frame_and_the_whole_cat_stays_inside_the_frame_with_empty_space_around_it_only_the_legs_move",
+	"animation_style": "",
+	"animation_type": "walking on all four legs to the right, a steady four-legged walk cycle seen in profile: the four legs step forward and back in alternation, the front legs swinging from the shoulders, the back legs swinging from the hips; the cat's head and body stay in exactly the same place in the middle of the frame and the whole cat stays inside the frame with empty space around it, only the legs move",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "cat_run_v4",
+	"prompt": "walking on all four legs to the right, a steady four-legged walk cycle seen in profile: the four legs step forward and back in alternation, the front legs swinging from the shoulders, the back legs swinging from the hips; the cat's head and body stay in exactly the same place in the middle of the frame and the whole cat stays inside the frame with empty space around it, only the legs move",
+	"rows": 1,
+	"source_image": "res://assets/generated/cat_side_base.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/cat_run_v4.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

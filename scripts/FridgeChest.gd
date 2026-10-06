@@ -14,6 +14,13 @@ const DRAG_CLICK_THRESHOLD := 10.0
 ## Display height of the chest art, in pixels.
 @export var display_height := 176.0
 
+## 外观: optional ABSOLUTE art paths (res://...). Empty keeps the chest art the prop ships
+## with; the fridge level dresses it as a 1990s briefcase instead. The two states must
+## share ONE body scale - same canvas, same ground row, matching silhouette - or the swap
+## visibly jumps and squashes (see art-pipeline-pitfalls §16).
+@export var closed_art_path := ""
+@export var open_art_path := ""
+
 var is_open := false
 var is_dragging := false
 var drag_start_position := Vector2.ZERO
@@ -116,23 +123,29 @@ func _create_sprite() -> void:
 
 
 func _load_textures() -> void:
-	closed_texture = _load_texture(CLOSED_TEXTURE_PATH)
-	open_texture = _load_texture(OPEN_TEXTURE_PATH)
+	closed_texture = _load_texture(closed_art_path if not closed_art_path.is_empty() else CLOSED_TEXTURE_PATH)
+	open_texture = _load_texture(open_art_path if not open_art_path.is_empty() else OPEN_TEXTURE_PATH)
 
 
-## Robust texture loader: freshly generated PNGs may not have been imported by
-## the editor yet, so fall back to reading the raw file from disk.
+## Robust texture loader. The PNG on disk wins over the editor's import cache:
+## when art is rewritten in place the cache still serves the OLD texture, while
+## the raw file is always current. The imported resource is the fallback (and the
+## only path that works inside an export).
 func _load_texture(texture_path: String) -> Texture2D:
-	if ResourceLoader.exists(texture_path):
-		return load(texture_path) as Texture2D
+	if texture_path.is_empty():
+		return null
 
 	var file_path := texture_path
 	if texture_path.begins_with("res://") or texture_path.begins_with("user://"):
 		file_path = ProjectSettings.globalize_path(texture_path)
 
-	var image := Image.new()
-	var error := image.load(file_path)
-	if error == OK and not image.is_empty():
-		return ImageTexture.create_from_image(image)
+	if FileAccess.file_exists(file_path):
+		var image := Image.new()
+		var error := image.load(file_path)
+		if error == OK and not image.is_empty():
+			return ImageTexture.create_from_image(image)
+
+	if ResourceLoader.exists(texture_path):
+		return load(texture_path) as Texture2D
 
 	return null

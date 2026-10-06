@@ -1,0 +1,58 @@
+{
+	"animation_name": "playfully_batting_and_pouncing_at_a_small_toy_on_the_floor_with_its_front_paws_happy_and_bouncy",
+	"animation_style": "",
+	"animation_type": "playfully batting and pouncing at a small toy on the floor with its front paws, happy and bouncy",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "cat_play_ball_normal",
+	"prompt": "playfully batting and pouncing at a small toy on the floor with its front paws, happy and bouncy",
+	"rows": 1,
+	"source_image": "res://assets/generated/cat_base_normal_v4.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/cat_play_ball_normal.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

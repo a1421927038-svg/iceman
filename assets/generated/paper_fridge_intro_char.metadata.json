@@ -1,0 +1,40 @@
+{
+	"animation_name": "opening_the_fridge_belly_door_wide_to_reveal_ripe_tomatoes_stacked_inside_the_belly_then_reaching_in_and_pulling_the_tomatoes_out_toward_the_viewer_the_arms_stay_attached_to_the_shoulders_and_the_hands_stay_attached_to_the_arms_with_no_floating_or_detached_parts_slightly_exaggerated_springy_cartoon_motion_same_character_design_colours_and_face_every_frame_clean_single_character_per_frame_on_a_transparent_background",
+	"animation_style": "",
+	"animation_type": "opening the fridge belly door wide to reveal ripe tomatoes stacked inside the belly, then reaching in and pulling the tomatoes out toward the viewer. The arms stay attached to the shoulders and the hands stay attached to the arms with no floating or detached parts. Slightly exaggerated, springy cartoon motion. Same character design, colours and face every frame, clean single character per frame on a transparent background.",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "paper_fridge_intro_char",
+	"prompt": "opening the fridge belly door wide to reveal ripe tomatoes stacked inside the belly, then reaching in and pulling the tomatoes out toward the viewer. The arms stay attached to the shoulders and the hands stay attached to the arms with no floating or detached parts. Slightly exaggerated, springy cartoon motion. Same character design, colours and face every frame, clean single character per frame on a transparent background.",
+	"rows": 1,
+	"source_image": "res://assets/generated/paper_fridge_kf_juggle_base_v3.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/paper_fridge_intro_char.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

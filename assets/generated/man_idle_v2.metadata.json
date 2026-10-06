@@ -1,0 +1,40 @@
+{
+	"animation_name": "standing_still_and_breathing_gently_slight_up_and_down_bob_arms_relaxed_at_the_sides",
+	"animation_style": "",
+	"animation_type": "standing still and breathing gently, slight up and down bob, arms relaxed at the sides",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "man_idle_v2",
+	"prompt": "standing still and breathing gently, slight up and down bob, arms relaxed at the sides",
+	"rows": 1,
+	"source_image": "res://assets/generated/man_base_v2.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/man_idle_v2.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

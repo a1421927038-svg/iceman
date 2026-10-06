@@ -1,0 +1,58 @@
+{
+	"animation_name": "playfully_batting_a_small_round_ball_back_and_forth_with_its_front_paws_pouncing_at_it_tail_flicking_excitedly",
+	"animation_style": "",
+	"animation_type": "playfully batting a small round ball back and forth with its front paws, pouncing at it, tail flicking excitedly",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "paper_cat_play_ball",
+	"prompt": "playfully batting a small round ball back and forth with its front paws, pouncing at it, tail flicking excitedly",
+	"rows": 1,
+	"source_image": "res://assets/generated/paper_cat_base_256.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/paper_cat_play_ball.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

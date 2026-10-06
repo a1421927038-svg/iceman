@@ -1,0 +1,46 @@
+{
+	"animation_name": "arms_spinning_in_big_circles_like_a_windmill_left_arm_sweeping_from_down_at_the_side_up_over_the_head_and_back_around_while_the_right_arm_sweeps_the_opposite_direction_both_hands_completely_empty_with_no_balls_and_no_props_standing_tall_and_upright_with_both_feet_planted_facial_expression_changing_between_a_wink_a_wide_grin_and_a_surprised_open_mouth",
+	"animation_style": "",
+	"animation_type": "arms spinning in big circles like a windmill, left arm sweeping from down at the side up over the head and back around while the right arm sweeps the opposite direction, both hands completely empty with no balls and no props, standing tall and upright with both feet planted, facial expression changing between a wink, a wide grin and a surprised open mouth",
+	"columns": 4,
+	"directions": [],
+	"frame_count": 4,
+	"frame_height": 320,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 320,
+			"w": 320,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 320,
+			"w": 320,
+			"x": 320,
+			"y": 0
+		},
+		{
+			"h": 320,
+			"w": 320,
+			"x": 640,
+			"y": 0
+		},
+		{
+			"h": 320,
+			"w": 320,
+			"x": 960,
+			"y": 0
+		}
+	],
+	"frame_width": 320,
+	"name": "fridge_juggle_v5",
+	"prompt": "arms spinning in big circles like a windmill, left arm sweeping from down at the side up over the head and back around while the right arm sweeps the opposite direction, both hands completely empty with no balls and no props, standing tall and upright with both feet planted, facial expression changing between a wink, a wide grin and a surprised open mouth",
+	"rows": 1,
+	"source_image": "res://assets/generated/paper_fridge_juggle_base_v4.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 320,
+	"spritesheet_path": "res://assets/generated/fridge_juggle_v5.png",
+	"spritesheet_width": 1280,
+	"type": "animation"
+}

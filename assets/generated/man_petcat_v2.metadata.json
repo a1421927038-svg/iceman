@@ -1,0 +1,40 @@
+{
+	"animation_name": "bending_forward_and_reaching_one_arm_down_to_stroke_something_on_the_ground_then_straightening_up",
+	"animation_style": "",
+	"animation_type": "bending forward and reaching one arm down to stroke something on the ground, then straightening up",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "man_petcat_v2",
+	"prompt": "bending forward and reaching one arm down to stroke something on the ground, then straightening up",
+	"rows": 1,
+	"source_image": "res://assets/generated/man_base_v2.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/man_petcat_v2.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

@@ -1,0 +1,40 @@
+{
+	"animation_name": "juggling_three_small_balls_in_the_air_with_both_hands_raised",
+	"animation_style": "",
+	"animation_type": "juggling three small balls in the air with both hands raised",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "man_juggle_v2",
+	"prompt": "juggling three small balls in the air with both hands raised",
+	"rows": 1,
+	"source_image": "res://assets/generated/man_base_v2.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/man_juggle_v2.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

@@ -1,0 +1,40 @@
+{
+	"animation_name": "standing_upright_and_resting_calmly_slow_deep_breathing_with_the_chest_visibly_rising_and_falling_a_gentle_side_to_side_sway_arms_hanging_relaxed_eyes_half_closed",
+	"animation_style": "",
+	"animation_type": "standing upright and resting calmly, slow deep breathing with the chest visibly rising and falling, a gentle side to side sway, arms hanging relaxed, eyes half closed",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "paper_fridge_rest_stand",
+	"prompt": "standing upright and resting calmly, slow deep breathing with the chest visibly rising and falling, a gentle side to side sway, arms hanging relaxed, eyes half closed",
+	"rows": 1,
+	"source_image": "res://assets/generated/idle_base.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/paper_fridge_rest_stand.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

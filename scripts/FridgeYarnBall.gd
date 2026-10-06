@@ -5,11 +5,37 @@ signal pressed_for_drag(ball: Control, pointer_offset: Vector2)
 signal unlock_requested(item_id: String)
 
 const DEFAULT_RADIUS := 48.0
+## 融在一起: the item's length in MINUTES is a paper BADGE notched onto the ball's top edge - a
+## scalloped pale plate with a dark medallion punched into it and a gold digit inside - so the number
+## and the ball's own logo read as ONE piece of art (1 = 1 分钟, 2 = 2 分钟).
+## This replaced the hover tooltip (the mouth balls no longer show one at all).
+const MINUTES_FONT_SIZE := 17
+## The digit's outline, drawn in the ball's own dark accent, with the gold face on top of it.
+const MINUTES_OUTLINE_SIZE := 3
+## The plate's radius, as a fraction of the ball's radius (the reference badge is about a third).
+const MINUTES_PLATE_FRAC := 0.38
+## It is a paper FLOWER: a circle whose radius ripples this deep around this many lobes.
+const MINUTES_PLATE_LOBES := 9
+const MINUTES_PLATE_LOBE_DEPTH := 0.085
+## The plate's gold rim, drawn as a slightly larger copy behind it, and its pale paper face.
+const MINUTES_PLATE_EDGE_FRAC := 1.10
+const MINUTES_PLATE_EDGE_COLOR := Color(0.87, 0.69, 0.28, 1.0)
+const MINUTES_PLATE_COLOR := Color(1.0, 0.95, 0.81, 1.0)
+## The dark medallion punched into the plate (a fraction of the plate's radius) and the digit's gold face.
+const MINUTES_MEDALLION_FRAC := 0.66
+const MINUTES_DIGIT_COLOR := Color(0.98, 0.85, 0.40, 1.0)
+## 1.0 = the plate is centred ON the ball's top edge: half rides above the ball, half rests on it.
+const MINUTES_PLATE_STAND_FRAC := 1.0
+## The logo's half-width, as a fraction of the ball's radius, and how far it drops so the plate sits
+## over its top margin - exactly like the reference art.
+const ICON_RADIUS_FRAC := 0.72
+const ICON_DROP_FRAC := 0.06
 
 var item_id := "tomato"
 var item_name := "Pomodoro"
 var reward_amount := 5
 var radius := DEFAULT_RADIUS
+var minutes := 0
 var unlocked := true
 var active := false
 var interactable := true
@@ -26,7 +52,9 @@ func setup(new_item_id: String, new_item_name: String, is_unlocked: bool, new_re
 	custom_minimum_size = Vector2(radius * 2.0 + 12.0, radius * 2.0 + 12.0)
 	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	tooltip_text = item_name
+	# 数字: no hover tooltip - the ball prints its length in minutes under the logo instead (the
+	# level calls set_minutes). tooltip_text is left EMPTY on purpose (FridgeLevel clears it too).
+	tooltip_text = ""
 	_load_icon()
 	queue_redraw()
 
@@ -56,6 +84,15 @@ func set_dragging_visual(value: bool) -> void:
 	queue_redraw()
 
 
+## 数字: how many whole minutes one focused run of this item lasts (1 = 1 分钟, 2 = 2 分钟).
+## 0 hides the digit.
+func set_minutes(value: int) -> void:
+	if value == minutes:
+		return
+	minutes = value
+	queue_redraw()
+
+
 func get_radius() -> float:
 	return radius
 
@@ -82,6 +119,43 @@ func set_velocity(new_velocity: Vector2) -> void:
 
 func _has_point(point: Vector2) -> bool:
 	return point.distance_to(size * 0.5) <= radius + 4.0
+
+
+## Custom tooltip: the engine's black TooltipPanel background is removed and
+## replaced by a cream paper card via the project theme
+## (res://ui/paper_tooltip_theme.tres), so this only lays out the two text lines
+## — the item's name and how long one focused run takes ("name\nduration", see
+## FridgeLevel). Returning a bare container guarantees nothing paints over the
+## themed card.
+func _make_custom_tooltip(for_text: String) -> Object:
+	var lines := for_text.split("\n", false)
+	if lines.is_empty():
+		return null
+
+	var column := VBoxContainer.new()
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_theme_constant_override("separation", 1)
+
+	var title := Label.new()
+	title.text = str(lines[0])
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", Color(0.29, 0.20, 0.15))
+	title.add_theme_color_override("font_shadow_color", Color(1.0, 1.0, 1.0, 0.5))
+	title.add_theme_constant_override("shadow_offset_y", 1)
+	column.add_child(title)
+
+	if lines.size() > 1:
+		var duration := Label.new()
+		duration.text = str(lines[1])
+		duration.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		duration.add_theme_font_size_override("font_size", 14)
+		duration.add_theme_color_override("font_color", Color(0.74, 0.42, 0.15))
+		duration.add_theme_color_override("font_shadow_color", Color(1.0, 1.0, 1.0, 0.4))
+		duration.add_theme_constant_override("shadow_offset_y", 1)
+		column.add_child(duration)
+
+	return column
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -124,10 +198,11 @@ func _draw() -> void:
 	draw_arc(center, draw_r - 2.0, 0.0, TAU, 36, _with_alpha(border_color, 0.95 * alpha), 1.8, true)
 	draw_arc(center, draw_r - 4.5, 0.0, TAU, 36, _with_alpha(dark_accent, 0.35 * alpha), 1.0, true)
 
-	# 4. Item icon logo inside the badge
+	# 4. Item icon logo, dropped a touch so the 数字 plate can sit over its top margin.
 	if icon_texture != null:
-		var icon_r: float = draw_r * 0.72
-		var icon_rect := Rect2(center - Vector2(icon_r, icon_r), Vector2(icon_r * 2.0, icon_r * 2.0))
+		var icon_r: float = draw_r * ICON_RADIUS_FRAC
+		var icon_centre := center + Vector2(0.0, radius * ICON_DROP_FRAC)
+		var icon_rect := Rect2(icon_centre - Vector2(icon_r, icon_r), Vector2(icon_r * 2.0, icon_r * 2.0))
 		draw_texture_rect(icon_texture, icon_rect, false, Color(1.0, 1.0, 1.0, alpha))
 
 	# 5. Active state gold aura highlight
@@ -135,11 +210,68 @@ func _draw() -> void:
 		draw_arc(center, draw_r + 4.5, 0.0, TAU, 40, Color(1.0, 0.86, 0.32, 0.98), 3.0, true)
 		draw_arc(center, draw_r + 2.0, 0.0, TAU, 36, Color(1.0, 1.0, 0.85, 0.90), 1.5, true)
 
+	# 6. 融在一起: the minutes badge rides the ball's top edge and is drawn LAST, so neither the logo
+	#    nor the aura can cross it - the number and the token read as one piece.
+	if minutes > 0:
+		_draw_minutes_badge(center, dark_accent, alpha)
+
 	# 6. Locked overlay: subtle tint + small lock icon badge at bottom-right
 	if not unlocked:
 		draw_circle(center, draw_r, Color(0.04, 0.05, 0.06, 0.38))
 		var lock_pos := center + Vector2(draw_r * 0.42, draw_r * 0.40)
 		_draw_lock_badge(lock_pos)
+
+
+## 融在一起: the item's length in minutes as a paper BADGE notched onto the ball's top edge - a
+## scalloped pale plate with a gold rim, a dark medallion punched into it and a gold digit (outlined
+## in the ball's own dark accent) inside. This is what merges the number with the token's logo.
+func _draw_minutes_badge(center: Vector2, ink: Color, alpha: float) -> void:
+	var plate_r: float = radius * MINUTES_PLATE_FRAC
+	var plate_center := Vector2(center.x, center.y - radius * MINUTES_PLATE_STAND_FRAC)
+	var plate := _minutes_plate_points(plate_center, plate_r)
+	var rim := _minutes_plate_points(plate_center, plate_r * MINUTES_PLATE_EDGE_FRAC)
+
+	# paper depth first, then the gold rim, then the pale plate face - the same cut-paper stack as the
+	# ball itself, so the badge looks glued onto the token rather than pasted over it.
+	draw_colored_polygon(_offset_points(plate, Vector2(1.4, 2.6)), Color(0.20, 0.13, 0.09, 0.34 * alpha))
+	draw_colored_polygon(rim, _with_alpha(MINUTES_PLATE_EDGE_COLOR, alpha))
+	draw_colored_polygon(plate, _with_alpha(MINUTES_PLATE_COLOR, alpha))
+
+	# the dark medallion punched into the plate, with a hairline of the rim colour around it
+	var medal_r: float = plate_r * MINUTES_MEDALLION_FRAC
+	draw_circle(plate_center + Vector2(0.0, 0.7), medal_r + 1.2, _with_alpha(MINUTES_PLATE_EDGE_COLOR, 0.92 * alpha))
+	draw_circle(plate_center, medal_r, _with_alpha(ink, alpha))
+
+	# the digit: a gold face with the ball's own dark accent as its outline
+	var font := get_theme_default_font()
+	if font == null:
+		return
+	var text := str(minutes)
+	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, MINUTES_FONT_SIZE).x
+	var baseline := Vector2(plate_center.x - width * 0.5, plate_center.y + float(MINUTES_FONT_SIZE) * 0.36)
+	draw_string_outline(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, MINUTES_FONT_SIZE,
+		MINUTES_OUTLINE_SIZE, _with_alpha(ink, alpha))
+	draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, MINUTES_FONT_SIZE,
+		_with_alpha(MINUTES_DIGIT_COLOR, alpha))
+
+
+## The plate's outline: a circle whose radius ripples MINUTES_PLATE_LOBE_DEPTH around
+## MINUTES_PLATE_LOBES rounded bumps - the scalloped paper flower of the reference badge.
+func _minutes_plate_points(plate_center: Vector2, plate_r: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	var steps := MINUTES_PLATE_LOBES * 6
+	for i in steps:
+		var t := TAU * float(i) / float(steps)
+		var r: float = plate_r * (1.0 + MINUTES_PLATE_LOBE_DEPTH * cos(float(MINUTES_PLATE_LOBES) * t))
+		points.append(plate_center + Vector2(cos(t), sin(t)) * r)
+	return points
+
+
+func _offset_points(points: PackedVector2Array, offset: Vector2) -> PackedVector2Array:
+	var moved := PackedVector2Array()
+	for point in points:
+		moved.append(point + offset)
+	return moved
 
 
 func _draw_lock_badge(pos: Vector2) -> void:

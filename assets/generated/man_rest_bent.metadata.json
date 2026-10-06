@@ -1,0 +1,40 @@
+{
+	"animation_name": "bent_over_with_both_hands_on_his_knees_back_rounded_and_head_hanging_down_panting_heavily_with_the_back_heaving_up_and_down",
+	"animation_style": "",
+	"animation_type": "bent over with both hands on his knees, back rounded and head hanging down, panting heavily with the back heaving up and down",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "man_rest_bent",
+	"prompt": "bent over with both hands on his knees, back rounded and head hanging down, panting heavily with the back heaving up and down",
+	"rows": 1,
+	"source_image": "res://assets/generated/man_base_v2.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/man_rest_bent.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

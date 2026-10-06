@@ -1,0 +1,40 @@
+{
+	"animation_name": "juggling_in_a_bouncy_repeatable_loop_both_arms_stay_firmly_attached_to_the_shoulders_and_both_hands_stay_attached_to_the_ends_of_the_arms_at_all_times_absolutely_no_floating_detached_or_duplicated_limbs_or_stray_body_parts_the_body_bounces_the_knees_bend_and_straighten_and_the_two_arms_swing_up_and_down_in_the_same_rhythm_with_a_springy_squash_and_stretch_on_the_torso_and_head_hands_remain_empty_with_no_objects_bar_every_frame_is_one_clean_complete_character_on_a_transparent_background_same_character_design_colours_and_face_every_frame",
+	"animation_style": "",
+	"animation_type": "juggling in a bouncy repeatable loop. Both arms stay firmly attached to the shoulders and both hands stay attached to the ends of the arms at all times - absolutely no floating, detached or duplicated limbs or stray body parts. The body bounces, the knees bend and straighten, and the two arms swing up and down in the same rhythm, with a springy squash-and-stretch on the torso and head. Hands remain empty with no objects. Bar every frame is one clean complete character on a transparent background. Same character design, colours and face every frame.",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "paper_fridge_juggle_char2",
+	"prompt": "juggling in a bouncy repeatable loop. Both arms stay firmly attached to the shoulders and both hands stay attached to the ends of the arms at all times - absolutely no floating, detached or duplicated limbs or stray body parts. The body bounces, the knees bend and straighten, and the two arms swing up and down in the same rhythm, with a springy squash-and-stretch on the torso and head. Hands remain empty with no objects. Bar every frame is one clean complete character on a transparent background. Same character design, colours and face every frame.",
+	"rows": 1,
+	"source_image": "res://assets/generated/paper_fridge_kf_juggle_base_v3.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/paper_fridge_juggle_char2.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

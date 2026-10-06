@@ -1,0 +1,40 @@
+{
+	"animation_name": "standing_and_smoking_a_cigarette_raising_one_hand_to_the_mouth_and_blowing_out_smoke",
+	"animation_style": "",
+	"animation_type": "standing and smoking a cigarette, raising one hand to the mouth and blowing out smoke",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "man_smoke_v2",
+	"prompt": "standing and smoking a cigarette, raising one hand to the mouth and blowing out smoke",
+	"rows": 1,
+	"source_image": "res://assets/generated/man_base_v2.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/man_smoke_v2.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

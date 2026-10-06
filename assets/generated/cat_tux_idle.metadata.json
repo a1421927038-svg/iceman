@@ -1,0 +1,58 @@
+{
+	"animation_name": "the_standing_cat_coming_alive_it_breathes_so_its_chest_rises_and_falls_it_blinks_one_ear_twitches_its_tail_swishes_from_side_to_side_and_it_glances_sideways_it_keeps_standing_in_exactly_the_same_place_in_the_middle_of_the_frame_with_all_four_paws_on_the_ground",
+	"animation_style": "",
+	"animation_type": "the standing cat coming alive: it breathes so its chest rises and falls, it blinks, one ear twitches, its tail swishes from side to side, and it glances sideways; it keeps standing in exactly the same place in the middle of the frame with all four paws on the ground",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "cat_tux_idle",
+	"prompt": "the standing cat coming alive: it breathes so its chest rises and falls, it blinks, one ear twitches, its tail swishes from side to side, and it glances sideways; it keeps standing in exactly the same place in the middle of the frame with all four paws on the ground",
+	"rows": 1,
+	"source_image": "res://assets/generated/cat_tux_base.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/cat_tux_idle.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

@@ -1,0 +1,58 @@
+{
+	"animation_name": "the_cat_coughing_up_a_hairball_a_big_exaggerated_gag_with_its_eyes_squeezed_shut_and_its_tongue_sticking_out_its_whole_body_convulsing_and_heaving_twice_then_it_recovers_opens_its_eyes_and_licks_its_lips_the_cat_stays_in_the_same_place_in_the_middle_of_the_frame",
+	"animation_style": "",
+	"animation_type": "the cat coughing up a hairball: a big exaggerated gag with its eyes squeezed shut and its tongue sticking out, its whole body convulsing and heaving twice, then it recovers, opens its eyes and licks its lips; the cat stays in the same place in the middle of the frame",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "cat_hair_v2",
+	"prompt": "the cat coughing up a hairball: a big exaggerated gag with its eyes squeezed shut and its tongue sticking out, its whole body convulsing and heaving twice, then it recovers, opens its eyes and licks its lips; the cat stays in the same place in the middle of the frame",
+	"rows": 1,
+	"source_image": "res://tests/_base_hair_0.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/cat_hair_v2.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

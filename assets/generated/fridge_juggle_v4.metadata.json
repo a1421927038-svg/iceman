@@ -1,0 +1,46 @@
+{
+	"animation_name": "juggling_three_balls_both_arms_spinning_in_wide_circles_like_a_windmill_each_arm_sweeping_up_then_out_to_the_side_then_down_in_turn_staying_standing_upright_and_tall_with_both_feet_planted_face_shifting_from_a_determined_frown_to_a_big_open_mouthed_grin",
+	"animation_style": "",
+	"animation_type": "juggling three balls, both arms spinning in wide circles like a windmill, each arm sweeping up then out to the side then down in turn, staying standing upright and tall with both feet planted, face shifting from a determined frown to a big open-mouthed grin",
+	"columns": 4,
+	"directions": [],
+	"frame_count": 4,
+	"frame_height": 320,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 320,
+			"w": 320,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 320,
+			"w": 320,
+			"x": 320,
+			"y": 0
+		},
+		{
+			"h": 320,
+			"w": 320,
+			"x": 640,
+			"y": 0
+		},
+		{
+			"h": 320,
+			"w": 320,
+			"x": 960,
+			"y": 0
+		}
+	],
+	"frame_width": 320,
+	"name": "fridge_juggle_v4",
+	"prompt": "juggling three balls, both arms spinning in wide circles like a windmill, each arm sweeping up then out to the side then down in turn, staying standing upright and tall with both feet planted, face shifting from a determined frown to a big open-mouthed grin",
+	"rows": 1,
+	"source_image": "res://assets/generated/paper_fridge_juggle_base_v4.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 320,
+	"spritesheet_path": "res://assets/generated/fridge_juggle_v4.png",
+	"spritesheet_width": 1280,
+	"type": "animation"
+}

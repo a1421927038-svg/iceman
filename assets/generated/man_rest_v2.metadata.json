@@ -1,0 +1,40 @@
+{
+	"animation_name": "standing_and_panting_for_breath_shoulders_rising_and_falling_hands_on_hips",
+	"animation_style": "",
+	"animation_type": "standing and panting for breath, shoulders rising and falling, hands on hips",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "man_rest_v2",
+	"prompt": "standing and panting for breath, shoulders rising and falling, hands on hips",
+	"rows": 1,
+	"source_image": "res://assets/generated/man_base_v2.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/man_rest_v2.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

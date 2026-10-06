@@ -1,0 +1,58 @@
+{
+	"animation_name": "the_cat_playing_with_the_grey_toy_mouse_at_its_front_paws_it_bats_the_mouse_with_one_front_paw_pounces_on_it_with_both_paws_rolls_it_around_then_sits_up_and_licks_its_paw_the_cat_keeps_its_body_in_the_same_place_in_the_middle_of_the_frame_only_its_paws_and_head_move",
+	"animation_style": "",
+	"animation_type": "the cat playing with the grey toy mouse at its front paws: it bats the mouse with one front paw, pounces on it with both paws, rolls it around, then sits up and licks its paw; the cat keeps its body in the same place in the middle of the frame, only its paws and head move",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "cat_play_v2",
+	"prompt": "the cat playing with the grey toy mouse at its front paws: it bats the mouse with one front paw, pounces on it with both paws, rolls it around, then sits up and licks its paw; the cat keeps its body in the same place in the middle of the frame, only its paws and head move",
+	"rows": 1,
+	"source_image": "res://tests/_base_play_1.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/cat_play_v2.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

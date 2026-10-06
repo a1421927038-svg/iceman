@@ -1,0 +1,58 @@
+{
+	"animation_name": "coughing_up_a_hairball_hunching_down_the_shoulders_heaving_and_the_head_lowered_retching",
+	"animation_style": "",
+	"animation_type": "coughing up a hairball: hunching down, the shoulders heaving and the head lowered, retching",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "cat_hairball_cow",
+	"prompt": "coughing up a hairball: hunching down, the shoulders heaving and the head lowered, retching",
+	"rows": 1,
+	"source_image": "res://assets/generated/cat_base_cow.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/cat_hairball_cow.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

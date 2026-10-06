@@ -1,0 +1,46 @@
+{
+	"animation_name": "rippling_water_surface_flowing_smoothly_left_to_right_wave_crests_drifting_sideways",
+	"animation_style": "",
+	"animation_type": "rippling water surface flowing smoothly left to right, wave crests drifting sideways",
+	"columns": 4,
+	"directions": [],
+	"frame_count": 4,
+	"frame_height": 192,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 192,
+			"w": 384,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 192,
+			"w": 384,
+			"x": 384,
+			"y": 0
+		},
+		{
+			"h": 192,
+			"w": 384,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 192,
+			"w": 384,
+			"x": 1152,
+			"y": 0
+		}
+	],
+	"frame_width": 384,
+	"name": "water_ripple_band",
+	"prompt": "rippling water surface flowing smoothly left to right, wave crests drifting sideways",
+	"rows": 1,
+	"source_image": "res://assets/generated/water_band_source.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 192,
+	"spritesheet_path": "res://assets/generated/water_ripple_band.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

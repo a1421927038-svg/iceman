@@ -1,0 +1,46 @@
+{
+	"animation_name": "opening_its_mouth_very_wide_the_jaw_dropping_down_and_the_eyes_widening_ending_with_the_mouth_held_fully_open",
+	"animation_style": "",
+	"animation_type": "opening its mouth very wide, the jaw dropping down and the eyes widening, ending with the mouth held fully open",
+	"columns": 4,
+	"directions": [],
+	"frame_count": 4,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "cat_open_cow",
+	"prompt": "opening its mouth very wide, the jaw dropping down and the eyes widening, ending with the mouth held fully open",
+	"rows": 1,
+	"source_image": "res://assets/generated/cat_base_cow.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/cat_open_cow.png",
+	"spritesheet_width": 1024,
+	"type": "animation"
+}

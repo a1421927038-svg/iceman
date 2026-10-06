@@ -1,0 +1,58 @@
+{
+	"animation_name": "curling_up_into_a_tight_sleeping_ball_eyes_closed_breathing_slowly_in_and_out",
+	"animation_style": "",
+	"animation_type": "curling up into a tight sleeping ball, eyes closed, breathing slowly in and out",
+	"columns": 6,
+	"directions": [],
+	"frame_count": 6,
+	"frame_height": 256,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 256,
+			"w": 256,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 256,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 768,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1024,
+			"y": 0
+		},
+		{
+			"h": 256,
+			"w": 256,
+			"x": 1280,
+			"y": 0
+		}
+	],
+	"frame_width": 256,
+	"name": "cat_sleep_tabby",
+	"prompt": "curling up into a tight sleeping ball, eyes closed, breathing slowly in and out",
+	"rows": 1,
+	"source_image": "res://assets/generated/cat_base_tabby.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 256,
+	"spritesheet_path": "res://assets/generated/cat_sleep_tabby.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}
