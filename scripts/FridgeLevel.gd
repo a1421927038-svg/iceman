@@ -3,10 +3,16 @@ extends Node2D
 
 ## 「冰箱人」关卡 —— 从 Arts 项目（scripts/Game.gd）中提取的独立关卡。
 ## 原版在关卡选择大厅（carousel）里通过冰箱门进入本关，离开时回到大厅；
-## 这里作为独立场景运行，因此去掉了大厅与其它关卡，退出按钮改为“重新进入本关”。
+## 这里作为独立场景运行，因此去掉了大厅与其它关卡。
+##
+## 桌面宠物: the game now runs as a desktop pet (see DesktopPetWindow). The window is transparent,
+## frameless and always on top, it has NO背景 (see LevelVisual), and only the characters and their
+## UI take the mouse - the rest of the window lets the click fall through to the desktop. The old
+## 右上角 "Emergency Exit" door (the only way back to the removed hub) went with it: the settings
+## panel's 重置 still restarts the round, and the window closes from the taskbar / Alt+F4.
 
-const DoorScript := preload("res://scripts/Door.gd")
 const LevelVisualScript := preload("res://scripts/LevelVisual.gd")
+const DesktopPetWindowScript := preload("res://scripts/DesktopPetWindow.gd")
 const FridgePomodoroPlayerScript := preload("res://scripts/FridgePomodoroPlayer.gd")
 const FridgeCatPetScript := preload("res://scripts/FridgeCatPet.gd")
 const FridgeMouthInventoryPanelScript := preload("res://scripts/FridgeMouthInventoryPanel.gd")
@@ -15,6 +21,7 @@ const FridgeItemIconScript := preload("res://scripts/FridgeItemIcon.gd")
 const FridgeYarnBallScript := preload("res://scripts/FridgeYarnBall.gd")
 const CoinPriceButtonScript := preload("res://scripts/CoinPriceButton.gd")
 const FridgeCatNoseScript := preload("res://scripts/FridgeCatNose.gd")
+const FridgeCatBellScript := preload("res://scripts/FridgeCatBell.gd")
 const FridgeChestScript := preload("res://scripts/FridgeChest.gd")
 const ActionSkeletonStandScript := preload("res://addons/骨骼动画/skeleton_stand.gd")
 const ActionGalleryPanelScript := preload("res://addons/骨骼动画/action_gallery_panel.gd")
@@ -56,7 +63,6 @@ func _is_fridge_mouth_item(item_id: String) -> bool:
 func _fridge_item_minutes(item_id: String) -> int:
 	return maxi(1, roundi(_get_fridge_item_duration(item_id) / 60.0))
 
-const FRIDGE_ESCAPE_POSITION := Vector2(500.0, -235.0)
 # The four actors stand in one row on the same ground line (visual bottoms
 # measured from their art): wardrobe -> briefcase -> fridge man -> cat.
 const FRIDGE_CAT_POSITION := Vector2(250.0, 131.0)
@@ -67,7 +73,6 @@ const FRIDGE_CAT_POSITION := Vector2(250.0, 131.0)
 ## sprite 42px above the prop, so halving the art alone would lift the book off the ground - this
 ## position sits 44px lower to keep the book's bottom on the very same ground line (art y 97..185).
 const FRIDGE_GALLERY_STAND_POSITION := Vector2(420.0, 183.0)
-const FRIDGE_ESCAPE_HIT_RECT := Rect2(-54.0, -54.0, 108.0, 108.0)
 const FRIDGE_PLAYER_DRAG_HIT_RECT := Rect2(-118.0, -286.0, 236.0, 344.0)
 # 随着BB机向上移动: once the BB机 levitation settles the fridge man drifts upward with the
 # pager, wraps around the screen edges, turns around when clicked and can still be dragged.
@@ -396,7 +401,10 @@ const FRIDGE_SPRAY_GROUND_Y := 184.0
 
 var world: Node2D
 var camera: Camera2D
-var is_changing_scene := false
+# 桌面宠物: the window side of the desktop pet - it makes the game window transparent, frameless
+# and always on top, and keeps its click-through region hugging the characters (see
+# DesktopPetWindow / `desktop_pet_hit_rects`).
+var fridge_desktop_pet: Node
 
 var fridge_overlay: CanvasLayer
 var fridge_overlay_root: Control
@@ -467,6 +475,9 @@ var fridge_yarn_pile: Control
 var fridge_yarn_balls: Array[Control] = []
 # Invisible hotspot over the nose on the mouth art (see FridgeCatNose).
 var fridge_nose_button: Control
+# 铃铛: the hotspot over the bell the cat wears - hover turns it red, clicking QUITS the game (see
+# FridgeCatBell). Another way out besides the tray icon.
+var fridge_bell_button: Control
 # Balls mid pour-out, keyed by ball: {"time", "delay", "origin", "target",
 # "burst"}. While a ball is in here it is hidden at the cat's throat and skipped
 # by the pile physics until it emerges and lands in its new spot.
@@ -541,6 +552,12 @@ func _ready() -> void:
 	add_child(camera)
 
 	_build_level()
+	# 桌面宠物: the window itself - transparent, frameless, always on top, and click-through
+	# everywhere the characters are not (see DesktopPetWindow).
+	fridge_desktop_pet = DesktopPetWindowScript.new()
+	fridge_desktop_pet.name = "DesktopPet"
+	fridge_desktop_pet.call("setup", self)
+	add_child(fridge_desktop_pet)
 
 
 func _process(delta: float) -> void:
@@ -574,6 +591,46 @@ func _fridge_screen_world_rect() -> Rect2:
 	var size: Vector2 = get_viewport_rect().size
 	var origin: Vector2 = inverse * Vector2.ZERO
 	return Rect2(origin, (inverse * size) - origin)
+
+
+## 桌面宠物: the game window covers the whole desktop now (see DesktopPetWindow), so the old
+## 1152x648 framing is re-aimed and the pets' size is adapted to the desktop's resolution. The window
+## runs with the stretch mode DISABLED (one scene unit = one screen pixel), so the camera's zoom alone
+## decides how big the pets look. The shell calls this once it has measured the desktop; a headless run
+## has none and keeps the old framing, so the test suites' measurements are untouched.
+const FRIDGE_DESKTOP_FEET_MARGIN := 40.0
+## The actors' visual ground line in world space (their art bottoms - see the prop positions).
+const FRIDGE_DESKTOP_GROUND_Y := 185.0
+## The whole row's centre in world space: the fridge man's art reaches about x = -160 and the
+## briefcase's about x = +580, so this centres the row under the camera.
+const FRIDGE_DESKTOP_ROW_CENTRE_X := 210.0
+## 适配合适的大小: how tall a desktop the pets are drawn 1:1 on. The camera zooms by
+## `desktop height / this`, so the fridge man's ~320 px of art stays about 21% of the screen's height on
+## any resolution - a 768-tall laptop gets a ~164 px pet, a 2160-tall 4K screen a ~460 px one.
+## ⚠ Raise this number to make the pets SMALLER, lower it to make them bigger.
+const FRIDGE_DESKTOP_DESIGN_HEIGHT := 1500.0
+const FRIDGE_DESKTOP_MIN_ZOOM := 0.5
+const FRIDGE_DESKTOP_MAX_ZOOM := 2.0
+
+
+## `ground_screen_y` is where the actors' ground line should land in the canvas (`_cover_desktop()`
+## passes the work area's bottom, so the pets stand on the desktop instead of across the taskbar); when
+## it is not given, the ground line simply goes FRIDGE_DESKTOP_FEET_MARGIN above the canvas bottom.
+func frame_fridge_desktop_camera(canvas: Vector2, ground_screen_y: float = -1.0) -> void:
+	if camera == null or not is_instance_valid(camera):
+		return
+	if canvas.x <= 0.0 or canvas.y <= 0.0:
+		return
+	var target: float = ground_screen_y if ground_screen_y > 0.0 else canvas.y - FRIDGE_DESKTOP_FEET_MARGIN
+	var zoom: float = clampf(canvas.y / FRIDGE_DESKTOP_DESIGN_HEIGHT,
+		FRIDGE_DESKTOP_MIN_ZOOM, FRIDGE_DESKTOP_MAX_ZOOM)
+	camera.zoom = Vector2(zoom, zoom)
+	# The camera sits at the viewport's centre and magnifies by `zoom`, so
+	# screen = (world - camera.position) * zoom + canvas / 2. Centring the row needs
+	# camera.position.x = the row centre, and aiming the ground line at `target` fixes camera.position.y.
+	camera.position = Vector2(
+		FRIDGE_DESKTOP_ROW_CENTRE_X,
+		FRIDGE_DESKTOP_GROUND_Y - (target - canvas.y * 0.5) / zoom)
 
 
 ## 随着BB机向上移动: while the BB机 levitation is held the fridge man drifts upward with the
@@ -740,15 +797,6 @@ func _input(event: InputEvent) -> void:
 	if _handle_fridge_player_drag(event):
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		if _is_mouse_over_fridge_escape():
-			_on_return_door_clicked(LEVEL_ID)
-			get_viewport().set_input_as_handled()
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
-		_on_return_door_clicked(LEVEL_ID)
 
 
 func _build_level() -> void:
@@ -760,14 +808,6 @@ func _build_level() -> void:
 	visual.setup(LEVEL_ID, LEVEL_COLOR)
 	world.add_child(visual)
 
-	var exit_door := DoorScript.new()
-	exit_door.name = "ReturnDoor"
-	exit_door.position = FRIDGE_ESCAPE_POSITION
-	exit_door.z_index = 3000
-	exit_door.setup("hub", "", "Emergency Exit", Color(0.12, 0.62, 0.34), true)
-	exit_door.clicked.connect(_on_return_door_clicked)
-	world.add_child(exit_door)
-
 	_load_fridge_progress()
 	# 全部解锁: every item is owned from the start (see _ensure_all_fridge_items_owned).
 	_ensure_all_fridge_items_owned()
@@ -778,7 +818,6 @@ func _build_level() -> void:
 	_create_fridge_spray()
 	_create_fridge_overlay()
 	_refresh_fridge_ui()
-	is_changing_scene = false
 
 
 func _spawn_fridge_player() -> void:
@@ -834,14 +873,6 @@ func _clear_world() -> void:
 	fridge_round_choice_root = null
 
 
-func _on_return_door_clicked(_level_id: String) -> void:
-	if is_changing_scene:
-		return
-	_save_fridge_progress()
-	is_changing_scene = true
-	call_deferred("_build_level")
-
-
 func _on_fridge_cat_pet_clicked() -> void:
 	_show_fridge_item_toolbar()
 
@@ -870,6 +901,7 @@ func _clear_overlay() -> void:
 	fridge_yarn_pile = null
 	fridge_yarn_balls.clear()
 	fridge_nose_button = null
+	fridge_bell_button = null
 	fridge_yarn_spawn.clear()
 	fridge_work_duration_spin = null
 	fridge_break_duration_spin = null
@@ -987,6 +1019,14 @@ func _create_fridge_item_toolbar() -> void:
 	fridge_nose_button.visible = false
 	fridge_nose_button.pressed.connect(_on_fridge_cat_nose_pressed)
 	fridge_overlay_root.add_child(fridge_nose_button)
+
+	# 铃铛: hover turns the bell red, clicking quits the game. It rides the cat's painted bell (no panel), so
+	# it is placed from the cat's own sprite every frame instead of from a panel rect.
+	fridge_bell_button = FridgeCatBellScript.new()
+	fridge_bell_button.name = "CatBell"
+	fridge_bell_button.visible = false
+	fridge_bell_button.pressed.connect(_on_fridge_cat_bell_pressed)
+	fridge_overlay_root.add_child(fridge_bell_button)
 
 	call_deferred("_scatter_fridge_yarn_balls")
 
@@ -1269,6 +1309,165 @@ func _fridge_sprite_art_rect(sprite: Node2D, texture: Texture2D) -> Rect2:
 		if anim.centered:
 			top_left -= size * 0.5
 	return Rect2(top_left, size)
+
+
+## 桌面宠物: everything the pointer must still be able to hit inside the otherwise click-through
+## window - the fridge man, the cat, the two props and whatever panel they currently have open.
+## Screen space, because that is what the window's passthrough region is expressed in (the window
+## is exactly the viewport, so no scaling is involved); the shell adds its own slack on top.
+func desktop_pet_hit_rects() -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	for actor: Node in [fridge_player, fridge_cat_pet, fridge_gallery_stand, fridge_box]:
+		_add_fridge_hit_rect(rects, _fridge_node_art_rect(actor))
+	# ⚠ 脚部下面的东西也算: the passthrough polygon also SHAPES the window, so every drawn thing outside it is
+	# cut off - the yarn pile (and a ball being dragged out of it), the spray, and the full-screen flash.
+	_add_fridge_hit_rect(rects, _fridge_node_art_rect(fridge_spray))
+	_add_fridge_hit_rect(rects, _fridge_node_art_rect(fridge_dragged_yarn_ball))
+	# ⚠ The balls, NOT the pile that holds them: the pile is a big playfield Control, and using it would
+	# hand the whole middle of the desktop to the game.
+	for ball: Control in fridge_yarn_balls:
+		if ball != null and is_instance_valid(ball) and ball.is_visible_in_tree():
+			_add_fridge_hit_rect(rects, ball.get_global_rect())
+	# ⚠⚠ The 打破第四面墙 flash is a FULL-SCREEN ColorRect that is created once and NEVER hides - only its
+	# alpha fades to 0. Testing `visible` therefore kept a 100%-of-the-window rect in the region for the rest
+	# of the session, and the click-through window then swallowed every click on the desktop (the user had to
+	# force-quit after a 番茄钟 performance). Only a flash that is actually fading may be covered.
+	if fridge_screen_flash != null and is_instance_valid(fridge_screen_flash) \
+			and fridge_screen_flash_time > 0.0 and fridge_screen_flash.color.a > 0.0:
+		_add_fridge_hit_rect(rects, fridge_screen_flash.get_global_rect())
+	# 分页面板: an open panel is UI the player has to reach, so all of it counts - never just the prop it
+	# belongs to. ⚠⚠ And all of it means its OVERLAY FURNITURE too: the 悬停说明框 pops ABOVE the cell it
+	# describes and the ribbon tabs stand above the board, so both stick out of the panel's own rect. Since
+	# the passthrough polygon also SHAPES the window, anything outside it is not drawn - a straight edge sliced
+	# the top off the hover box (「弹框的上面一部分好像也被挡住了不显示」) and off the book's top
+	# (「书本打开后，上边有部分被一个边框挡住了」). _fridge_node_art_rect walks every visible descendant, so the
+	# tooltip, the tabs and the arrows all come along.
+	for panel: Control in [fridge_gallery_panel, fridge_box_panel, fridge_item_panel, fridge_settings_panel]:
+		if panel == null or not is_instance_valid(panel) or not panel.visible:
+			continue
+		var panel_rect: Rect2 = panel.get_global_rect()
+		var furniture := _fridge_node_art_rect(panel)
+		if furniture.size.x > 0.0 and furniture.size.y > 0.0:
+			panel_rect = panel_rect.merge(furniture)
+		_add_fridge_hit_rect(rects, panel_rect)
+	# The post-round choice buttons live out in the world, so they are measured like an actor.
+	_add_fridge_hit_rect(rects, _fridge_node_art_rect(fridge_round_choice_root))
+	return rects
+
+
+func _add_fridge_hit_rect(rects: Array[Rect2], rect: Rect2) -> void:
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+		return
+	rects.append(rect)
+
+
+## Every visibly drawn Control under a node, for _fridge_node_art_rect - descending but NOT into a Control
+## with clip_contents (see there).
+func _fridge_drawable_controls(node: Node) -> Array[Control]:
+	var out: Array[Control] = []
+	_fridge_collect_drawable_controls(node, out)
+	return out
+
+
+func _fridge_collect_drawable_controls(node: Node, out: Array[Control]) -> void:
+	for child: Node in node.get_children():
+		if child is Control:
+			var control := child as Control
+			if not control.is_visible_in_tree():
+				continue
+			out.append(control)
+			if control.clip_contents:
+				continue
+		_fridge_collect_drawable_controls(child, out)
+
+
+## 铃铛: where the cat's painted bell is, in screen space, for the bell hotspot (see FridgeCatBell). The bell
+## lives in the cat's square 256 px frame, and the frame's centre sits at the sprite's origin (Sprite2D is
+## centred and the cat never offsets it), so the spot is the frame's own transform - which also carries the
+## display scale, the canvas transform (the desktop zoom) and the run atlas's extra scale. Mirroring the frame
+## (flip_h, the side-view run) moves the bell with it. Empty while the cat is not in its plain idle: another
+## pose draws a different frame, where the bell is elsewhere, so the hotspot hides instead of guessing.
+func _fridge_cat_bell_screen_rect() -> Rect2:
+	if fridge_cat_pet == null or not is_instance_valid(fridge_cat_pet):
+		return Rect2()
+	var cat: Node = fridge_cat_pet
+	if cat.has_method("is_bell_available") and not bool(cat.call("is_bell_available")):
+		return Rect2()
+	var sprite: Sprite2D = cat.get("sprite") as Sprite2D
+	if sprite == null or not is_instance_valid(sprite):
+		return Rect2()
+	var frame: float = FridgeCatBellScript.FRAME_SIZE
+	var canvas_rect: Rect2 = FridgeCatBellScript.BELL_CANVAS_RECT
+	var from_canvas := canvas_rect.position - Vector2(frame, frame) * 0.5
+	var to_canvas := canvas_rect.end - Vector2(frame, frame) * 0.5
+	if sprite.flip_h:
+		from_canvas.x = -from_canvas.x
+		to_canvas.x = -to_canvas.x
+	var to_screen: Transform2D = get_viewport().get_canvas_transform() * sprite.global_transform
+	return Rect2(to_screen * from_canvas, Vector2.ZERO).expand(to_screen * to_canvas)
+
+
+## A Polygon2D's bounding box in screen space (see _fridge_node_art_rect): the shadow polygons are drawn
+## in world space, so each point goes through the node's canvas transform.
+func _fridge_polygon_screen_rect(polygon_node: Polygon2D) -> Rect2:
+	var to_screen: Transform2D = get_viewport().get_canvas_transform() * polygon_node.get_global_transform()
+	var bounds := Rect2()
+	var started := false
+	for point: Vector2 in polygon_node.polygon:
+		var screen_point: Vector2 = to_screen * point
+		bounds = Rect2(screen_point, Vector2.ZERO) if not started else bounds.expand(screen_point)
+		started = true
+	return bounds
+
+
+## 限速: hand the man to the cursor, but only this far per frame. A fast flick teleported him tens of
+## pixels at a time and the window's passthrough polygon had to chase that hard - a stale rectangular piece
+## of the shape was briefly visible (「好像是一个正方形边框范围突然遮挡」). The follow is smoothed instead:
+## at most FRIDGE_PLAYER_DRAG_MAX_STEP once per frame (several mouse motions can arrive in the same frame;
+## only the first one moves him), so he trails the cursor during a flick and catches up when it slows.
+const FRIDGE_PLAYER_DRAG_MAX_STEP := 22.0
+var fridge_player_drag_step_frame := -1
+
+
+func _limit_fridge_player_drag(from: Vector2, to: Vector2) -> Vector2:
+	var frame: int = Engine.get_process_frames()
+	if frame == fridge_player_drag_step_frame:
+		return from
+	fridge_player_drag_step_frame = frame
+	var delta := to - from
+	if delta.length() <= FRIDGE_PLAYER_DRAG_MAX_STEP:
+		return to
+	return from + delta.normalized() * FRIDGE_PLAYER_DRAG_MAX_STEP
+
+
+## Any node's drawn rect in screen space: the union of its visible Sprite2D / AnimatedSprite2D children
+## (see _fridge_prop_art_rect), of any Polygon2D it carries (the actors' olive drop shadows sit at their
+## feet - leaving them out cut the art off just below the shoes, 「脚部下面有部分显示不全」) and of any
+## Control it carries (the round-choice buttons are Controls that stand out in the world). Empty when
+## nothing visible is found.
+func _fridge_node_art_rect(node: Node) -> Rect2:
+	if node == null or not is_instance_valid(node):
+		return Rect2()
+	var rect := _fridge_prop_art_rect(node)
+	var found := rect.size.x > 0.0 and rect.size.y > 0.0
+	for child: Node in node.find_children("*", "Polygon2D", true, false):
+		var polygon_node := child as Polygon2D
+		if polygon_node == null or not polygon_node.is_visible_in_tree() or polygon_node.polygon.is_empty():
+			continue
+		var polygon_rect := _fridge_polygon_screen_rect(polygon_node)
+		if polygon_rect.size.x <= 0.0 or polygon_rect.size.y <= 0.0:
+			continue
+		rect = polygon_rect if not found else rect.merge(polygon_rect)
+		found = true
+	# ⚠⚠ ...but STOP at any Control with clip_contents: a clipped container cannot draw outside itself, so
+	# neither can its children. The book's entry ScrollContainer holds all 12 cards and get_global_rect()
+	# knows nothing about clipping - measuring them stretched the region ~390 px below the book and swallowed
+	# clicks on the desktop there.
+	for control: Control in _fridge_drawable_controls(node):
+		var control_rect := control.get_global_rect()
+		rect = control_rect if not found else rect.merge(control_rect)
+		found = true
+	return rect if found else Rect2()
 
 
 func _on_fridge_gallery_stand_toggled(open: bool) -> void:
@@ -2548,6 +2747,12 @@ func _on_fridge_cat_nose_pressed() -> void:
 	_refresh_fridge_yarn_balls()
 
 
+## 铃铛: clicking the bell the cat wears QUITS the game - the user's own exit, the same one the tray icon's
+## right click performs. Hovering it only turns the bell red (FridgeCatBell draws the token).
+func _on_fridge_cat_bell_pressed() -> void:
+	get_tree().quit()
+
+
 func _refresh_fridge_yarn_balls() -> void:
 	if fridge_yarn_pile == null or not is_instance_valid(fridge_yarn_pile):
 		return
@@ -2700,6 +2905,18 @@ func _position_fridge_popups() -> void:
 		else:
 			fridge_nose_button.visible = false
 
+	# 铃铛: the bell is painted into the cat's own frame, so its hotspot rides the cat's sprite. ⚠ It is only
+	# shown while the cat stands in its plain idle - a performance pose (or the open bag / a drag) draws a
+	# different frame, where the bell is somewhere else. Clicking it quits (the user's own exit).
+	if fridge_bell_button != null and is_instance_valid(fridge_bell_button):
+		var bell_rect := _fridge_cat_bell_screen_rect()
+		if bell_rect.size.x > 0.0 and bell_rect.size.y > 0.0:
+			fridge_bell_button.size = bell_rect.size
+			fridge_bell_button.global_position = bell_rect.position
+			fridge_bell_button.visible = true
+		else:
+			fridge_bell_button.visible = false
+
 	if fridge_settings_panel != null and not fridge_settings_panel_has_manual_position and fridge_dragged_panel != fridge_settings_panel:
 		var settings_position: Vector2 = _clamp_fridge_panel_position(fridge_settings_panel, screen_position + Vector2(300.0, -252.0))
 		fridge_settings_panel.position = settings_position
@@ -2759,7 +2976,8 @@ func _handle_fridge_player_drag(event: InputEvent) -> bool:
 					and mouse_position.distance_to(fridge_player_press_position) > FRIDGE_PLAYER_CLICK_MOVE_LIMIT:
 				fridge_player_drag_moved = true
 			if fridge_player_drag_moved:
-				fridge_player.global_position = mouse_position + fridge_player_drag_offset
+				fridge_player.global_position = _limit_fridge_player_drag(
+					fridge_player.global_position, mouse_position + fridge_player_drag_offset)
 			return true
 
 		if event is InputEventMouseButton:
@@ -2956,11 +3174,6 @@ func _update_fridge_coin_popups(delta: float) -> void:
 		if t >= 1.0:
 			label.queue_free()
 			fridge_coin_popups.remove_at(i)
-
-
-func _is_mouse_over_fridge_escape() -> bool:
-	var local_mouse := get_global_mouse_position() - FRIDGE_ESCAPE_POSITION
-	return FRIDGE_ESCAPE_HIT_RECT.has_point(local_mouse)
 
 
 func _on_fridge_item_unlock_pressed(item_id: String) -> void:

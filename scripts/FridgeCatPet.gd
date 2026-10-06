@@ -163,6 +163,15 @@ func _ready() -> void:
 	queue_redraw()
 
 
+## 铃铛: is the cat standing in its plain idle, i.e. is its painted bell where the hotspot expects it? A
+## performance pose, the open bag, a drag or the doze sag all draw a different frame (the bell moves with the
+## pose), so the level hides the bell hotspot instead of guessing. See FridgeCatBell / FridgeLevel.
+func is_bell_available() -> bool:
+	return sprite != null and is_instance_valid(sprite) \
+		and idle_action_id == "" and not is_bag_open and not is_opening and not is_dragging \
+		and doze_body_offset == Vector2.ZERO
+
+
 func _process(delta: float) -> void:
 	time += delta
 	if is_opening:
@@ -383,15 +392,19 @@ func _update_doze(delta: float) -> void:
 	doze_body_offset = doze.get_body_offset()
 
 
+## The art is read from the PNG's BYTES rather than from its path. The paper art ships as raw PNGs,
+## and inside an exported build `ProjectSettings.globalize_path("res://…")` points at a path that
+## does not exist on disk, so Image.load() fails with "Error opening file" (which is exactly what an
+## exported build used to print for every cat frame). FileAccess reads a file packed into the .pck
+## just as happily as a real one, so the same bytes serve the editor and the export alike - and
+## reading the bytes still bypasses the editor's import cache (see LevelVisual's art notes). The
+## imported resource is the last resort, for a build that ships the texture but not the PNG.
 func _load_texture(texture_path: String) -> Texture2D:
-	var file_path := texture_path
-	if texture_path.begins_with("res://") or texture_path.begins_with("user://"):
-		file_path = ProjectSettings.globalize_path(texture_path)
-
-	var image := Image.new()
-	var error := image.load(file_path)
-	if error == OK and not image.is_empty():
-		return ImageTexture.create_from_image(image)
+	var bytes := FileAccess.get_file_as_bytes(texture_path)
+	if not bytes.is_empty():
+		var image := Image.new()
+		if image.load_png_from_buffer(bytes) == OK and not image.is_empty():
+			return ImageTexture.create_from_image(image)
 
 	if ResourceLoader.exists(texture_path):
 		return load(texture_path) as Texture2D
@@ -597,13 +610,29 @@ func _get_idle_action_frames(action_id: String) -> Array:
 	return frames
 
 
+## The same bytes-not-paths rule as _load_texture (see there): FileAccess reads a PNG that lives
+## inside the exported .pck, while Image.load(globalize_path(…)) cannot.
+## The same bytes-not-paths rule as _load_texture (see there): FileAccess reads a PNG that lives as a
+## real file (the editor), and the imported texture covers the case where only the .ctex is shipped.
+## ⚠ an EXPORTED build packs NO raw PNG at all - `get_file_as_bytes` comes back EMPTY there - so the
+## fallback below is not optional: without it the idle atlas is null, the cat has no animation frames
+## and the game falls back to an old cat sprite.
 func _load_image(texture_path: String) -> Image:
-	var file_path := texture_path
-	if texture_path.begins_with("res://") or texture_path.begins_with("user://"):
-		file_path = ProjectSettings.globalize_path(texture_path)
-	var image := Image.new()
-	if image.load(file_path) == OK and not image.is_empty():
-		return image
+	var bytes := FileAccess.get_file_as_bytes(texture_path)
+	if not bytes.is_empty():
+		var packed_image := Image.new()
+		if packed_image.load_png_from_buffer(bytes) == OK and not packed_image.is_empty():
+			return packed_image
+
+	if ResourceLoader.exists(texture_path):
+		var texture := load(texture_path) as Texture2D
+		if texture != null:
+			var image := texture.get_image()
+			if image != null and not image.is_empty():
+				if image.get_format() != Image.FORMAT_RGBA8:
+					image.convert(Image.FORMAT_RGBA8)
+				return image
+
 	return null
 
 

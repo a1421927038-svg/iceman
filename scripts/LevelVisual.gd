@@ -78,14 +78,29 @@ func _draw_meow_energy_level() -> void:
 	draw_rect(Rect2(-606.0, -318.0, 1212.0, 640.0), Color(0.34, 0.22, 0.16, 0.25), false, 3.0)
 
 
+## 桌面宠物: the fridge level draws NO background any more. The game window is transparent and
+## always on top (see DesktopPetWindow), so the old kraft-paper sheet would paint a green-green
+## rectangle over the desktop - the characters are meant to stand straight on it. Kept behind this
+## switch (and query) rather than deleted so the paper look is one line away if it is ever wanted
+## back, and so the tests can assert that the background really is gone.
+##
+## The artwork itself is still on disk: res://assets/generated/paper_level_background.png.
 const PAPER_BG_TEXTURE_PATH := "res://assets/generated/paper_level_background.png"
+const DRAW_PAPER_BACKGROUND := false
 var paper_bg_texture: Texture2D
 
 
+## Whether this visual paints a level background. False = the window shows the desktop behind it.
+func uses_paper_background() -> bool:
+	return DRAW_PAPER_BACKGROUND
+
+
 func _draw_fridge_pomodoro_level() -> void:
+	if not DRAW_PAPER_BACKGROUND:
+		return
 	if paper_bg_texture == null and ResourceLoader.exists(PAPER_BG_TEXTURE_PATH):
 		paper_bg_texture = load(PAPER_BG_TEXTURE_PATH) as Texture2D
-	
+
 	if paper_bg_texture != null:
 		# Draw the paper texture centered over the camera viewport (1280x720 centered at 0,0)
 		draw_texture_rect(paper_bg_texture, Rect2(-640.0, -360.0, 1280.0, 720.0), false)

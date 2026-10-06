@@ -113,11 +113,82 @@ func _run() -> void:
 	print("pile settled inside=", settled_inside)
 	ok = ok and settled_inside
 
+	# ---------- 4. 铃铛: hover turns the cat's bell red, clicking QUITS ----------
+	# The bell hotspot rides the cat's PAINTED bell (the collar's gold bell in its 256 px frame), so it must land
+	# where the paint is, stay inside the cat's art (the click-through region only wraps what is measured there)
+	# and its token must be RED. ⚠ The handler is never CALLED - it quits the game.
+	var bell: Control = level.get("fridge_bell_button") as Control
+	var cat: Node = level.get("fridge_cat_pet")
+	level.call("_position_fridge_popups")
+	var bell_rect: Rect2 = bell.get_global_rect() if bell != null else Rect2()
+	var cat_art: Rect2 = level.call("_fridge_node_art_rect", cat)
+	# the paint's own bell centre: frame (127.5, 162) of 256, mapped through the sprite's transform
+	var sprite: Sprite2D = cat.get("sprite") as Sprite2D
+	var to_screen: Transform2D = get_root().get_canvas_transform() * sprite.global_transform
+	var paint_centre: Vector2 = to_screen * (Vector2(127.5, 162.0) - Vector2(128.0, 128.0))
+	var centre_error: float = bell_rect.get_center().distance_to(paint_centre)
+	var token := bell.get("_bell_texture") as Texture2D if bell != null else null
+	print("bell: exists=", bell != null, " visible=", bell.visible if bell != null else "n/a",
+		" rect=", bell_rect, " paint_centre=", paint_centre, " centre_error=", snappedf(centre_error, 0.01),
+		" inside_cat_art=", cat_art.encloses(bell_rect), " token=", token != null,
+		" available=", cat.call("is_bell_available"))
+	ok = ok and bell != null
+	ok = ok and token != null and cat_art.encloses(bell_rect)
+	ok = ok and centre_error < 2.0
+	# the hotspot is the BELL (round body + loop), not its rectangle
+	ok = ok and bool(bell.call("_has_point", bell.size * Vector2(0.5, 0.66)))
+	print("bell has_point: centre=", bell.call("_has_point", bell.size * Vector2(0.5, 0.66)),
+		" top_left=", bell.call("_has_point", Vector2(1.0, 1.0)),
+		" bottom_left=", bell.call("_has_point", Vector2(1.0, bell.size.y - 1.0)))
+	ok = ok and not bool(bell.call("_has_point", Vector2(1.0, 1.0)))
+	ok = ok and not bool(bell.call("_has_point", Vector2(1.0, bell.size.y - 1.0)))
+	# hover state (the token itself is drawn red - see the check on its pixels below)
+	bell.call("_on_mouse_entered")
+	ok = ok and bool(bell.get("hovered"))
+	bell.call("_on_mouse_exited")
+	ok = ok and not bool(bell.get("hovered"))
+	# the click path exists but is NOT invoked (it calls get_tree().quit())
+	print("bell click wired=", bell.pressed.is_connected(Callable(level, "_on_fridge_cat_bell_pressed")),
+		" handler=", level.has_method("_on_fridge_cat_bell_pressed"))
+	ok = ok and bell.pressed.is_connected(Callable(level, "_on_fridge_cat_bell_pressed"))
+	ok = ok and level.has_method("_on_fridge_cat_bell_pressed")
+	# the token is RED: the mean of its opaque pixels must be red-dominant (it is the colour swap's whole point)
+	var token_image: Image = Image.load_from_file(
+		ProjectSettings.globalize_path("res://assets/generated/paper_cat_bell_hover.png"))
+	var red_sum := Vector3.ZERO
+	var opaque := 0
+	for y in token_image.get_height():
+		for x in token_image.get_width():
+			var c: Color = token_image.get_pixel(x, y)
+			if c.a > 0.5:
+				red_sum += Vector3(c.r, c.g, c.b)
+				opaque += 1
+	var mean := red_sum / maxf(float(opaque), 1.0)
+	print("bell token: opaque=", opaque, " mean_rgb=(", snappedf(mean.x, 0.01), ",", snappedf(mean.y, 0.01),
+		",", snappedf(mean.z, 0.01), ")")
+	ok = ok and opaque > 500 and mean.x > 0.6 and mean.x - mean.y > 0.3 and mean.x - mean.z > 0.35
+	# ⚠ and it is hidden the moment the cat stops standing in its plain idle (another pose paints the bell
+	# somewhere else), so it can never be clicked in the wrong place. The bag is still OPEN here, so the bell is
+	# legitimately hidden - the positive case is checked after the bag closes.
+	cat.set("is_dragging", true)
+	ok = ok and not bool(cat.call("is_bell_available"))
+	level.call("_position_fridge_popups")
+	print("bell while dragging: available=", cat.call("is_bell_available"), " visible=", bell.visible)
+	ok = ok and not bell.visible
+	cat.set("is_dragging", false)
+
 	# ---------- closing the mouth hides the nose again ----------
 	level.call("_on_fridge_item_toolbar_close_pressed")
 	level.call("_position_fridge_popups")
 	print("visible_after_close=", nose.visible)
 	ok = ok and not nose.visible
+
+	# ---------- 4b. 铃铛 visible again once the cat is back to its plain idle ----------
+	for i in 3:
+		await process_frame
+	level.call("_position_fridge_popups")
+	print("bell with the bag shut: available=", cat.call("is_bell_available"), " visible=", bell.visible)
+	ok = ok and bool(cat.call("is_bell_available")) and bell.visible
 
 	print("CAT_NOSE_REFRESH_TEST=", "PASS" if ok else "FAIL")
 	level.queue_free()

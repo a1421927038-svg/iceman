@@ -8,6 +8,8 @@ export.cfg
 export_credentials.cfg
 *.tmp
 addons/
+tests/
+build/
 
 # Imported translations (automatically generated from CSV files)
 *.translation
