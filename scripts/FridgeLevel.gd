@@ -475,9 +475,19 @@ var fridge_yarn_pile: Control
 var fridge_yarn_balls: Array[Control] = []
 # Invisible hotspot over the nose on the mouth art (see FridgeCatNose).
 var fridge_nose_button: Control
-# 铃铛: the hotspot over the bell the cat wears - hover turns it red, clicking QUITS the game (see
-# FridgeCatBell). Another way out besides the tray icon.
+# 铃铛: the hotspot over the bell the cat wears - hover turns it red, clicking asks 「是否退出」 before the game
+# closes (see FridgeCatBell). Another way out besides the tray icon.
 var fridge_bell_button: Control
+# 退出确认: the paper card the bell opens (see _create_fridge_quit_panel) - 取消 / 退出.
+var fridge_quit_panel: PanelContainer
+const FRIDGE_QUIT_PANEL_SIZE := Vector2(268.0, 124.0)
+# 纸片: the confirm card's palette - the cream paper the tooltips wear, with kraft-brown ink.
+const FRIDGE_PAPER_COLOR := Color(0.945, 0.910, 0.835, 0.99)
+const FRIDGE_PAPER_BORDER := Color(0.475, 0.375, 0.255, 0.85)
+const FRIDGE_PAPER_INK := Color(0.235, 0.180, 0.125)
+const FRIDGE_PAPER_BUTTON := Color(0.902, 0.855, 0.768, 1.0)
+const FRIDGE_PAPER_BUTTON_HOVER := Color(0.965, 0.930, 0.850, 1.0)
+const FRIDGE_PAPER_BUTTON_PRESSED := Color(0.845, 0.790, 0.690, 1.0)
 # Balls mid pour-out, keyed by ball: {"time", "delay", "origin", "target",
 # "burst"}. While a ball is in here it is hidden at the cat's throat and skipped
 # by the pile physics until it emerges and lands in its new spot.
@@ -534,9 +544,11 @@ var fridge_break_duration := FRIDGE_DEFAULT_BREAK_DURATION
 const FRIDGE_SCREEN_SHAKE_TIME := 0.55
 const FRIDGE_SCREEN_SHAKE_AMOUNT := 22.0
 const FRIDGE_SCREEN_FLASH_TIME := 0.28
+## How much the 打破第四面墙 hit brightens the game's own art (a modulate, not a screen-covering sheet - see
+## _on_fridge_player_screen_hit).
+const FRIDGE_SCREEN_FLASH_BRIGHTEN := 0.5
 var fridge_screen_shake_time := 0.0
 var fridge_screen_flash_time := 0.0
-var fridge_screen_flash: ColorRect
 
 
 func _ready() -> void:
@@ -734,20 +746,13 @@ func _flip_fridge_player_flight_dir() -> void:
 
 
 ## 打破第四面墙: the juggle's last tosses reached the camera - jolt the view and flash it.
+## ⚠ The flash BRIGHTENS the game's own art (a modulate on this level) rather than covering the screen with a
+## pale ColorRect. The desktop-pet window is transparent and click-through, so a full-screen sheet also veiled
+## the DESKTOP behind it - the user saw it as 「场景中所有元素透明度变化」. Modulate MULTIPLIES what the game
+## draws, so transparent pixels stay transparent and the wallpaper is never touched.
 func _on_fridge_player_screen_hit() -> void:
 	fridge_screen_shake_time = FRIDGE_SCREEN_SHAKE_TIME
 	fridge_screen_flash_time = FRIDGE_SCREEN_FLASH_TIME
-	if fridge_screen_flash == null or not is_instance_valid(fridge_screen_flash):
-		var layer := CanvasLayer.new()
-		layer.name = "ScreenHitFlash"
-		layer.layer = 90
-		add_child(layer)
-		fridge_screen_flash = ColorRect.new()
-		fridge_screen_flash.name = "Flash"
-		fridge_screen_flash.color = Color(1.0, 0.98, 0.9, 0.0)
-		fridge_screen_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		fridge_screen_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
-		layer.add_child(fridge_screen_flash)
 
 
 func _update_fridge_screen_shake(delta: float) -> void:
@@ -760,14 +765,14 @@ func _update_fridge_screen_shake(delta: float) -> void:
 				cos(fridge_screen_shake_time * 63.0)) * FRIDGE_SCREEN_SHAKE_AMOUNT * damp
 	elif camera != null and is_instance_valid(camera) and camera.offset != Vector2.ZERO:
 		camera.offset = Vector2.ZERO
-	if fridge_screen_flash != null and is_instance_valid(fridge_screen_flash):
-		if fridge_screen_flash_time > 0.0:
-			fridge_screen_flash_time = maxf(fridge_screen_flash_time - delta, 0.0)
-			fridge_screen_flash.color = Color(
-				1.0, 0.98, 0.9,
-				0.85 * (fridge_screen_flash_time / FRIDGE_SCREEN_FLASH_TIME))
-		elif fridge_screen_flash.color.a != 0.0:
-			fridge_screen_flash.color = Color(1.0, 0.98, 0.9, 0.0)
+	if fridge_screen_flash_time > 0.0:
+		fridge_screen_flash_time = maxf(fridge_screen_flash_time - delta, 0.0)
+	# ...and the punch itself: a warm brighten of the game's own art, keyed off the same timer so it can never
+	# linger (at 0 the modulate is exactly WHITE again).
+	var brighten: float = FRIDGE_SCREEN_FLASH_BRIGHTEN * (fridge_screen_flash_time / FRIDGE_SCREEN_FLASH_TIME)
+	var wanted_modulate := Color(1.0 + brighten, 1.0 + brighten * 0.98, 1.0 + brighten * 0.9)
+	if modulate != wanted_modulate:
+		modulate = wanted_modulate
 
 
 func _is_ball_over_fridge_player(ball: Control) -> bool:
@@ -889,6 +894,7 @@ func _clear_overlay() -> void:
 	fridge_overlay_root = null
 	fridge_item_panel = null
 	fridge_settings_panel = null
+	fridge_quit_panel = null
 	fridge_gallery_panel = null
 	fridge_box_panel = null
 	fridge_coin_label = null
@@ -944,6 +950,7 @@ func _create_fridge_overlay() -> void:
 
 	_create_fridge_item_toolbar()
 	_create_fridge_settings_panel()
+	_create_fridge_quit_panel()
 	_create_fridge_gallery_panel()
 	_create_fridge_box_panel()
 	_position_fridge_popups()
@@ -1328,13 +1335,10 @@ func desktop_pet_hit_rects() -> Array[Rect2]:
 	for ball: Control in fridge_yarn_balls:
 		if ball != null and is_instance_valid(ball) and ball.is_visible_in_tree():
 			_add_fridge_hit_rect(rects, ball.get_global_rect())
-	# ⚠⚠ The 打破第四面墙 flash is a FULL-SCREEN ColorRect that is created once and NEVER hides - only its
-	# alpha fades to 0. Testing `visible` therefore kept a 100%-of-the-window rect in the region for the rest
-	# of the session, and the click-through window then swallowed every click on the desktop (the user had to
-	# force-quit after a 番茄钟 performance). Only a flash that is actually fading may be covered.
-	if fridge_screen_flash != null and is_instance_valid(fridge_screen_flash) \
-			and fridge_screen_flash_time > 0.0 and fridge_screen_flash.color.a > 0.0:
-		_add_fridge_hit_rect(rects, fridge_screen_flash.get_global_rect())
+	# ⚠ The 打破第四面墙 hit used to leave a FULL-SCREEN ColorRect here for the rest of the session (it never
+	# hid, only faded), which both veiled the desktop and kept a 100%-of-the-window rect in the region (the
+	# click-through window then swallowed every click - the user had to force-quit). It is a modulate on this
+	# level now, so there is no sheet to measure at all.
 	# 分页面板: an open panel is UI the player has to reach, so all of it counts - never just the prop it
 	# belongs to. ⚠⚠ And all of it means its OVERLAY FURNITURE too: the 悬停说明框 pops ABOVE the cell it
 	# describes and the ribbon tabs stand above the board, so both stick out of the panel's own rect. Since
@@ -1342,7 +1346,7 @@ func desktop_pet_hit_rects() -> Array[Rect2]:
 	# the top off the hover box (「弹框的上面一部分好像也被挡住了不显示」) and off the book's top
 	# (「书本打开后，上边有部分被一个边框挡住了」). _fridge_node_art_rect walks every visible descendant, so the
 	# tooltip, the tabs and the arrows all come along.
-	for panel: Control in [fridge_gallery_panel, fridge_box_panel, fridge_item_panel, fridge_settings_panel]:
+	for panel: Control in [fridge_gallery_panel, fridge_box_panel, fridge_item_panel, fridge_settings_panel, fridge_quit_panel]:
 		if panel == null or not is_instance_valid(panel) or not panel.visible:
 			continue
 		var panel_rect: Rect2 = panel.get_global_rect()
@@ -2747,9 +2751,100 @@ func _on_fridge_cat_nose_pressed() -> void:
 	_refresh_fridge_yarn_balls()
 
 
-## 铃铛: clicking the bell the cat wears QUITS the game - the user's own exit, the same one the tray icon's
-## right click performs. Hovering it only turns the bell red (FridgeCatBell draws the token).
+## 铃铛: clicking the bell the cat wears asks first - 「要退出游戏吗？」 with 取消 / 退出 - and only 退出 closes
+## the game (the user's own exit; the tray icon's right click still quits outright). Toggles, so a second click
+## on the bell closes the card again.
 func _on_fridge_cat_bell_pressed() -> void:
+	if fridge_quit_panel == null or not is_instance_valid(fridge_quit_panel):
+		return
+	fridge_quit_panel.visible = not fridge_quit_panel.visible
+	_position_fridge_popups()
+
+
+## 退出确认: a small 纸片 card, centred on the viewport while it is open (see _position_fridge_popups).
+func _create_fridge_quit_panel() -> void:
+	fridge_quit_panel = PanelContainer.new()
+	fridge_quit_panel.name = "QuitConfirm"
+	fridge_quit_panel.visible = false
+	fridge_quit_panel.size = FRIDGE_QUIT_PANEL_SIZE
+	fridge_quit_panel.custom_minimum_size = FRIDGE_QUIT_PANEL_SIZE
+	fridge_quit_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	fridge_quit_panel.add_theme_stylebox_override("panel", _create_fridge_paper_style(FRIDGE_PAPER_COLOR))
+	fridge_overlay_root.add_child(fridge_quit_panel)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 12)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	fridge_quit_panel.add_child(content)
+
+	var title := Label.new()
+	title.text = "要退出游戏吗？"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 17)
+	title.add_theme_color_override("font_color", FRIDGE_PAPER_INK)
+	content.add_child(title)
+
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 16)
+	content.add_child(row)
+
+	var cancel_button := _create_fridge_paper_button("取消")
+	cancel_button.pressed.connect(_on_fridge_quit_cancelled)
+	row.add_child(cancel_button)
+
+	var confirm_button := _create_fridge_paper_button("退出")
+	confirm_button.pressed.connect(_on_fridge_quit_confirmed)
+	row.add_child(confirm_button)
+
+
+## 纸片 card: cream paper, a soft kraft rim and a gentle drop shadow - the project's paper-craft look, with no
+## dark outline.
+func _create_fridge_paper_style(bg_color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.border_color = FRIDGE_PAPER_BORDER
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(10)
+	style.set_content_margin_all(14)
+	style.shadow_color = Color(0.16, 0.12, 0.08, 0.30)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0.0, 3.0)
+	return style
+
+
+func _create_fridge_paper_button(label_text: String) -> Button:
+	var button := Button.new()
+	button.text = label_text
+	button.custom_minimum_size = Vector2(88.0, 34.0)
+	button.add_theme_font_size_override("font_size", 15)
+	button.add_theme_color_override("font_color", FRIDGE_PAPER_INK)
+	button.add_theme_color_override("font_hover_color", FRIDGE_PAPER_INK)
+	button.add_theme_color_override("font_pressed_color", FRIDGE_PAPER_INK)
+	button.add_theme_stylebox_override("normal", _create_fridge_paper_button_style(FRIDGE_PAPER_BUTTON, 1))
+	button.add_theme_stylebox_override("hover", _create_fridge_paper_button_style(FRIDGE_PAPER_BUTTON_HOVER, 1))
+	button.add_theme_stylebox_override("pressed", _create_fridge_paper_button_style(FRIDGE_PAPER_BUTTON_PRESSED, 1))
+	button.add_theme_stylebox_override("focus", _create_fridge_paper_button_style(FRIDGE_PAPER_BUTTON, 2))
+	return button
+
+
+func _create_fridge_paper_button_style(bg_color: Color, border_width: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.border_color = FRIDGE_PAPER_BORDER
+	style.set_border_width_all(border_width)
+	style.set_corner_radius_all(7)
+	style.set_content_margin_all(6)
+	return style
+
+
+func _on_fridge_quit_cancelled() -> void:
+	if fridge_quit_panel != null and is_instance_valid(fridge_quit_panel):
+		fridge_quit_panel.visible = false
+
+
+## The ONLY path that closes the game from the bell - the user has confirmed.
+func _on_fridge_quit_confirmed() -> void:
 	get_tree().quit()
 
 
@@ -2916,6 +3011,12 @@ func _position_fridge_popups() -> void:
 			fridge_bell_button.visible = true
 		else:
 			fridge_bell_button.visible = false
+
+	# 退出确认: centred on the viewport while it is open (nothing to anchor it to - the bell's own card).
+	if fridge_quit_panel != null and is_instance_valid(fridge_quit_panel) and fridge_quit_panel.visible:
+		var canvas_size: Vector2 = get_viewport_rect().size
+		fridge_quit_panel.size = FRIDGE_QUIT_PANEL_SIZE
+		fridge_quit_panel.position = ((canvas_size - FRIDGE_QUIT_PANEL_SIZE) * 0.5).round()
 
 	if fridge_settings_panel != null and not fridge_settings_panel_has_manual_position and fridge_dragged_panel != fridge_settings_panel:
 		var settings_position: Vector2 = _clamp_fridge_panel_position(fridge_settings_panel, screen_position + Vector2(300.0, -252.0))

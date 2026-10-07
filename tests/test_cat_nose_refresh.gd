@@ -152,6 +152,51 @@ func _run() -> void:
 		" handler=", level.has_method("_on_fridge_cat_bell_pressed"))
 	ok = ok and bell.pressed.is_connected(Callable(level, "_on_fridge_cat_bell_pressed"))
 	ok = ok and level.has_method("_on_fridge_cat_bell_pressed")
+
+	# ---------- 4a. the bell ASKS: a 是否退出 card, not an instant quit ----------
+	# ⚠ `_on_fridge_cat_bell_pressed` is safe to call now (it only opens the card); the 退出 button's own
+	# handler is NEVER invoked here - it quits the test.
+	level.call("_on_fridge_cat_bell_pressed")
+	await process_frame
+	level.call("_position_fridge_popups")
+	var quit_panel: PanelContainer = level.get("fridge_quit_panel") as PanelContainer
+	var buttons: Array = []
+	var labels: Array = []
+	if quit_panel != null:
+		for child: Node in quit_panel.find_children("*", "Button", true, false):
+			buttons.append(child)
+			labels.append((child as Button).text)
+		# the card is UI the player has to reach, so it must be inside the click-through region
+		var rects3: Array = level.call("desktop_pet_hit_rects")
+		var region4: PackedVector2Array = get_root().mouse_passthrough_polygon
+		var panel_rect3: Rect2 = quit_panel.get_global_rect()
+		var centre_covered: bool = _point_in_polygon(region4, panel_rect3.get_center())
+		var view_size := get_root().get_visible_rect().size
+		var centred_error: float = panel_rect3.get_center().distance_to(view_size * 0.5)
+		print("quit card: visible=", quit_panel.visible, " rect=", panel_rect3,
+			" buttons=", labels, " in_hit_rects=", rects3.has(panel_rect3),
+			" centre_in_region=", centre_covered, " centred_error=", snappedf(centred_error, 0.1))
+		ok = ok and quit_panel.visible
+		ok = ok and labels.has("退出") and labels.has("取消")
+		ok = ok and centre_covered and centred_error < 2.0
+		var confirm: Button = null
+		for button: Button in buttons:
+			if button.text == "退出":
+				confirm = button
+		ok = ok and confirm != null and confirm.pressed.is_connected(Callable(level, "_on_fridge_quit_confirmed"))
+		ok = ok and level.has_method("_on_fridge_quit_confirmed")
+	# 取消 just closes the card
+	level.call("_on_fridge_quit_cancelled")
+	await process_frame
+	print("quit card after 取消: visible=", quit_panel.visible)
+	ok = ok and not quit_panel.visible
+	# ... and a second bell click closes it again (toggle)
+	level.call("_on_fridge_cat_bell_pressed")
+	await process_frame
+	ok = ok and quit_panel.visible
+	level.call("_on_fridge_cat_bell_pressed")
+	await process_frame
+	ok = ok and not quit_panel.visible
 	# the token is RED: the mean of its opaque pixels must be red-dominant (it is the colour swap's whole point)
 	var token_image: Image = Image.load_from_file(
 		ProjectSettings.globalize_path("res://assets/generated/paper_cat_bell_hover.png"))
@@ -194,3 +239,18 @@ func _run() -> void:
 	level.queue_free()
 	await process_frame
 	quit(0)
+
+
+## Point-in-polygon for the click-through region (⚠ Rect2.has_point EXCLUDES the far edge).
+func _point_in_polygon(polygon: PackedVector2Array, point: Vector2) -> bool:
+	var inside := false
+	var count := polygon.size()
+	var j := count - 1
+	for i in count:
+		var a := polygon[i]
+		var b := polygon[j]
+		if ((a.y > point.y) != (b.y > point.y)) \
+				and point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x:
+			inside = not inside
+		j = i
+	return inside
