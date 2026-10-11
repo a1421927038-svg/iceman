@@ -30,6 +30,13 @@ const DESKTOP_FEET_MARGIN := 40.0
 const COVER_DESKTOP := true
 ## The tray icon's art - the project's own icon, which every export already carries.
 const TRAY_ICON_PATH := "res://icon.png"
+## ⚠⚠ 突然变透明: 没有背景 - the pets must be drawn on a fully TRANSPARENT sheet. Any pale coverage behind them
+## veils the desktop and reads as 「场景中所有元素突然变的透明」 (the same symptom the old full-screen flash
+## ColorRect caused). The project asks for exactly this (rendering/viewport/transparent_background plus a
+## Color(0, 0, 0, 0) rendering/environment/defaults/default_clear_color), but a window resize or a mode change
+## can leave the root viewport clearing with an OPAQUE colour again - and at startup that lands on whichever
+## frame the window first resizes, which is why it only ever struck 偶尔.
+const TRANSPARENT_CLEAR_COLOR := Color(0.0, 0.0, 0.0, 0.0)
 
 ## The level that supplies the interactive rects (see FridgeLevel.desktop_pet_hit_rects).
 var host: Node
@@ -127,10 +134,42 @@ func _on_tray_pressed(mouse_button: int, _mouse_position: Vector2) -> void:
 
 
 func _process(_delta: float) -> void:
+	# 透明: cheapest possible guard - a one-property read that only writes when the background really was lost.
+	_enforce_transparency()
 	# 分辨率变化: re-cover so a changed screen (or a taskbar that moved) is picked up without a restart.
 	if COVER_DESKTOP:
 		_cover_desktop()
 	_update_passthrough()
+
+
+## The per-frame half of the transparency guard: a plain Viewport property (no Win32 call), so it can run every
+## frame for free. See TRANSPARENT_CLEAR_COLOR for why a lost transparent background looks like the whole scene
+## going see-through.
+func _enforce_transparency() -> void:
+	var viewport := get_tree().root
+	if viewport != null and not viewport.transparent_bg:
+		_force_transparency()
+
+
+## The unconditional half - called wherever the window is re-made (the first cover, a resize, a mode change),
+## because those are the moments the transparent background can be dropped.
+func _force_transparency() -> void:
+	var viewport := get_tree().root
+	if viewport != null:
+		viewport.transparent_bg = true
+	RenderingServer.set_default_clear_color(TRANSPARENT_CLEAR_COLOR)
+
+
+## ⚠⚠ 切换其他软件后变透明: opening Explorer or another application's window FOREGROUNDS it over this one and
+## re-shows/re-makes ours when the player comes back - 「开始运行游戏时，如果打开文件夹或切换其他软件界面有时会出现
+## 场景中所有元素变透明，变亮」. Those notifications are exactly the moments the transparent background can be
+## dropped, so it is re-asserted on every focus change in either direction (and the tray's un-minimize path and
+## every resize already do the same - see _cover_desktop()).
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_FOCUS_IN, NOTIFICATION_APPLICATION_FOCUS_OUT, \
+		NOTIFICATION_WM_WINDOW_FOCUS_IN, NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+			_force_transparency()
 
 
 ## 无边框 / 透明 / 置顶 / 点击穿透: the flags that turn an ordinary game window into a desktop overlay.
@@ -155,6 +194,8 @@ func _apply_window_flags() -> void:
 	window.always_on_top = true
 	window.mouse_passthrough = false
 	window.mouse_passthrough_polygon = _sentinel_region()
+	# ⚠ The window was (re)made as a transparent sheet - make sure the viewport behind it is transparent too.
+	_force_transparency()
 	window_flags = {
 		"borderless": true,
 		"transparent": true,
@@ -193,6 +234,9 @@ func _cover_desktop() -> void:
 		# lets the clicks through (see the region below).
 		window.size = screen_rect.size
 		window.position = screen_rect.position
+		# ⚠ 透明: a resize re-makes the window, and the transparent background can be dropped with it - which
+		# is exactly the startup frame the 「所有元素突然变透明」 reports came from.
+		_force_transparency()
 	var viewport := get_viewport()
 	if viewport == null:
 		return

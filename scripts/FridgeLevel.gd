@@ -136,12 +136,12 @@ const FRIDGE_GALLERY_TAB_ITEMS := "items"
 const FRIDGE_GALLERY_TAB_SKELETON_LOGO := "res://assets/generated/ui_tab_logo_skeleton_pale.png"
 const FRIDGE_GALLERY_TAB_ITEMS_LOGO := "res://assets/generated/ui_tab_logo_items_pale.png"
 ## 摊开的书: the notebook panel's grid geometry - two cells per row, each just its ICON (the names
-## and 说明 live in the hover tooltip, see `cell_labels`). The icon size and the book's own page
-## margins (38/32/38/42) are chosen together so the panel lands on the upright open-book art's 4:3
-## aspect AND nothing spills off the cream pages: 2*146 + 8 + 76 = 376 wide, 2*100 + 8 + 74 = 282.
-const FRIDGE_GALLERY_BOOK_CARD_SIZE := Vector2(146.0, 100.0)
-const FRIDGE_GALLERY_BOOK_ICON_SIZE := Vector2(60.0, 60.0)
-const FRIDGE_GALLERY_BOOK_CARD_GAP := 8.0
+## and 说明 live in the hover tooltip, see `cell_labels`). ⚠ Doubled on request (「小红书打开后的UI所有
+## 元素也放大一倍」), together with the panel's page margins and the ribbon tabs: the book now lands on
+## the same 4:3 open-book art at 2*292 + 16 + 152 = 752 wide and 2*200 + 16 + 148 = 564 tall.
+const FRIDGE_GALLERY_BOOK_CARD_SIZE := Vector2(292.0, 200.0)
+const FRIDGE_GALLERY_BOOK_ICON_SIZE := Vector2(120.0, 120.0)
+const FRIDGE_GALLERY_BOOK_CARD_GAP := 16.0
 ## 正上方: the backpack is pinned directly above the notebook prop - centred on the prop's own ART,
 ## with its bottom edge this far clear of the art's top. The art is MEASURED off the prop's sprites
 ## every frame (see _fridge_prop_panel_position), so moving the stand can never leave the opened
@@ -165,13 +165,13 @@ const FRIDGE_GALLERY_CELL_TEXTURE := "res://assets/generated/ui_paper_pocket.png
 const FRIDGE_GALLERY_GRID_COLUMNS := 2
 ## 道具箱格子: a smaller icon so the hover zoom has room, and a bigger skeleton-action
 ## badge on the left of each row.
-const FRIDGE_BOX_ICON_SIZE := Vector2(34.0, 34.0)
-const FRIDGE_BOX_ACTION_ICON_SIZE := Vector2(64.0, 64.0)
-const FRIDGE_BOX_ACTION_HEADER_WIDTH := 96.0
+const FRIDGE_BOX_ICON_SIZE := Vector2(68.0, 68.0)
+const FRIDGE_BOX_ACTION_ICON_SIZE := Vector2(128.0, 128.0)
+const FRIDGE_BOX_ACTION_HEADER_WIDTH := 192.0
 ## 缩小些: the box's cells carry the item ART alone (the name lives in the hover tooltip), squared paper
 ## compartments - 62 -> 56 and the logo 38 -> 34, with the rim's margin scaled to match.
-const FRIDGE_BOX_CARD_SIZE := Vector2(56.0, 56.0)
-const FRIDGE_BOX_CELL_MARGIN := 6.0
+const FRIDGE_BOX_CARD_SIZE := Vector2(112.0, 112.0)
+const FRIDGE_BOX_CELL_MARGIN := 12.0
 ## 公文包: the reference look - the opened case is the panel's board (its padded lining holds the tray), the
 ## cells are the case's recessed COMPARTMENTS, and the tray is a fixed 3x2 so the unused slots are drawn
 ## exactly like the filled ones.
@@ -207,10 +207,15 @@ const FRIDGE_BOX_PANEL_GAP := 12.0
 ## their height above the panel, still land fully on screen.
 const FRIDGE_PANEL_SCREEN_MARGIN := 48.0
 
+## 第一个图标: the 骨架 page's first card is a LINK, not a performance - hovering it pops the panel's 悬停说明框
+## with the invite address and a click opens it in the player's browser (see _on_fridge_gallery_entry_pressed).
+const FRIDGE_DISCORD_URL := "https://discord.gg/GCuZSjYba"
+
 ## Action/animation entries shown by the wardrobe prop's gallery panel.
 ## New performances just get appended here and mapped in
 ## `_on_fridge_gallery_entry_pressed`.
 const FRIDGE_GALLERY_ENTRIES := [
+	{"id": "discord", "name": "Discord", "description": FRIDGE_DISCORD_URL, "icon": "res://assets/generated/paper_icon_discord.png"},
 	{"id": "juggle", "name": "抛球杂耍", "description": "连续抛接小球", "icon": "res://assets/generated/paper_skeleton_juggle_icon.png"},
 	{"id": "man_rest_stand", "name": "站立歇息", "description": "靠墙站一会儿", "icon": "res://assets/generated/paper_icon_man_rest_stand.png"},
 	{"id": "man_smoke", "name": "抽烟吐圈", "description": "吐出一个个烟圈", "icon": "res://assets/generated/paper_icon_man_smoke.png"},
@@ -513,9 +518,24 @@ var fridge_player_drag_offset := Vector2.ZERO
 var fridge_player_flight_dir := 1.0
 var fridge_player_flight_origin := Vector2.ZERO
 var fridge_player_flight_has_origin := false
-# 点击冰箱人: while he is idle, a click on him hides the notebook prop and the briefcase
-# (a second click brings them back) so the player can clear the room. The cat stays put.
+# 点击冰箱人: while he is idle, a click on him clears the room - the notebook prop, the briefcase AND the cat
+# (a second click brings them back) - and turns HIM into a cardboard box with only his hair, nose and beard
+# showing. The disguise carries the same 512x512 canvas as his own art, so its own bottom row is aligned to his
+# feet row rather than guessed.
+const FRIDGE_BOX_DISGUISE_TEXTURE := "res://assets/generated/paper_box_disguise.png"
+## His feet row inside his own 512 frame (his idle art's paint ends at row 510).
+const FRIDGE_BOX_DISGUISE_MAN_FEET_ROW := 510.0
+## The box art's own painted bottom row, measured off the PNG.
+## ⚠ Only a DEFAULT: the value actually used is measured off the alpha bbox of the art that got loaded (see
+## _ensure_fridge_box_disguise), so re-baking the PNG never needs a code change. The re-bakes have moved it
+## 498 (v1) -> 497 (v2) -> 481 (the current art, whose box sits lower in its 512 canvas).
+const FRIDGE_BOX_DISGUISE_BOTTOM_ROW := 481.0
+## ⚠ 缩小一倍: the disguise is drawn at HALF his own scale (「变成盒子的状态整个美术元素大小缩小一倍」).
+const FRIDGE_BOX_DISGUISE_SCALE := 0.5
 var fridge_props_hidden := false
+var fridge_box_disguise: Sprite2D
+## The disguise art's painted bottom row, MEASURED off the texture actually loaded.
+var fridge_box_bottom_row := FRIDGE_BOX_DISGUISE_BOTTOM_ROW
 var fridge_player_drag_moved := false
 var fridge_player_press_msec := 0
 var fridge_player_press_position := Vector2.ZERO
@@ -546,7 +566,11 @@ const FRIDGE_SCREEN_SHAKE_AMOUNT := 22.0
 const FRIDGE_SCREEN_FLASH_TIME := 0.28
 ## How much the 打破第四面墙 hit brightens the game's own art (a modulate, not a screen-covering sheet - see
 ## _on_fridge_player_screen_hit).
-const FRIDGE_SCREEN_FLASH_BRIGHTEN := 0.5
+## ⚠ 变白 fix: this was 0.5, which MULTIPLIES the art: kraft (0.75, 0.61, 0.48) x 1.5 clips to a washed peach
+## and the white paper bits (hair, moustache, the cat) clip to PURE WHITE - the user read the whole scene
+## turning white as a rendering bug (「刚运行游戏，又出现变白色的情况」). At 0.15 the punch is still felt but
+## nothing clips, so the paper art keeps its colour.
+const FRIDGE_SCREEN_FLASH_BRIGHTEN := 0.15
 var fridge_screen_shake_time := 0.0
 var fridge_screen_flash_time := 0.0
 
@@ -583,6 +607,7 @@ func _process(delta: float) -> void:
 	_update_fridge_player_form()
 	_update_fridge_player_flight(delta)
 	_update_fridge_screen_shake(delta)
+	_update_fridge_box_disguise()
 	_update_fridge_idle(delta)
 	_update_fridge_spray()
 
@@ -756,6 +781,11 @@ func _on_fridge_player_screen_hit() -> void:
 
 
 func _update_fridge_screen_shake(delta: float) -> void:
+	# ⚠ Clamped every frame: the brighten below multiplies the whole level, so a runaway timer would leave the
+	# art washed out for the rest of the session - which a player reads as 「场景中所有元素变透明」. The punch is
+	# only ever meant to last FRIDGE_SCREEN_FLASH_TIME.
+	fridge_screen_flash_time = clampf(fridge_screen_flash_time, 0.0, FRIDGE_SCREEN_FLASH_TIME)
+	fridge_screen_shake_time = clampf(fridge_screen_shake_time, 0.0, FRIDGE_SCREEN_SHAKE_TIME)
 	if fridge_screen_shake_time > 0.0:
 		fridge_screen_shake_time = maxf(fridge_screen_shake_time - delta, 0.0)
 		var damp: float = fridge_screen_shake_time / FRIDGE_SCREEN_SHAKE_TIME
@@ -1159,7 +1189,7 @@ func _create_fridge_gallery_panel() -> void:
 		"cell_labels": false,
 		# 文字说明: a tighter cell inset leaves room for the icon without growing the card (and with
 		# it the whole book) any further.
-		"cell_margin": 5.0,
+		"cell_margin": 10.0,
 		"show_title": false,
 		# 底部那段提示: the 下拉查看更多 line is dropped (the wheel still pulls the list down).
 		"show_hint": false,
@@ -1303,10 +1333,14 @@ func _fridge_sprite_art_rect(sprite: Node2D, texture: Texture2D) -> Rect2:
 	# named `xform`, not `transform`: a local called `transform` shadows Node2D's own property.
 	var xform := sprite.get_global_transform()
 	var art_scale: Vector2 = xform.get_scale()
-	var size: Vector2 = texture.get_size() * art_scale
+	# ⚠ ABS: a MIRRORED sprite (negative x scale - the TV performance's boat is drawn flipped) otherwise
+	# produced a Rect2 with a NEGATIVE size, which Godot rejects ("Rect2 size is negative...") every frame and
+	# which left the mirrored art outside the click-through region.
+	var size: Vector2 = (texture.get_size() * art_scale).abs()
 	var top_left: Vector2 = xform.origin
 	if sprite is Sprite2D:
 		var plain := sprite as Sprite2D
+		# ⚠ the OFFSET keeps the SIGNED scale: mirroring flips an offset with it.
 		top_left -= plain.offset * art_scale
 		if plain.centered:
 			top_left -= size * 0.5
@@ -1324,6 +1358,16 @@ func _fridge_sprite_art_rect(sprite: Node2D, texture: Texture2D) -> Rect2:
 ## is exactly the viewport, so no scaling is involved); the shell adds its own slack on top.
 func desktop_pet_hit_rects() -> Array[Rect2]:
 	var rects: Array[Rect2] = []
+	# ⚠ 拖拽时不重建区域: while the man is being DRAGGED the region used to be rebuilt on EVERY frame (measured:
+	# 20 of 20 frames changed) because the union of his art rects travels with him. Every rebuild is a Win32
+	# window-region change on a transparent, layered, always-on-top window - the least battle-tested path in
+	# this renderer - and the user saw the window flash WHITE while dragging him in the boxed state
+	# (「在冰箱爷爷变成小盒子的状态下，鼠标拖拽 会变成白色」). While a drag is actually MOVING, the region is
+	# therefore pinned to the WHOLE window in one step; the tight region comes back on release, and even if the
+	# release event never arrives the pin ages out after FRIDGE_DRAG_REGION_HOLD frames with no drag step.
+	if fridge_player_is_dragging and _is_fridge_drag_region_pinned():
+		rects.append(Rect2(Vector2.ZERO, Vector2(get_viewport_rect().size)))
+		return rects
 	for actor: Node in [fridge_player, fridge_cat_pet, fridge_gallery_stand, fridge_box]:
 		_add_fridge_hit_rect(rects, _fridge_node_art_rect(actor))
 	# ⚠ 脚部下面的东西也算: the passthrough polygon also SHAPES the window, so every drawn thing outside it is
@@ -1431,6 +1475,10 @@ func _fridge_polygon_screen_rect(polygon_node: Polygon2D) -> Rect2:
 ## only the first one moves him), so he trails the cursor during a flick and catches up when it slows.
 const FRIDGE_PLAYER_DRAG_MAX_STEP := 22.0
 var fridge_player_drag_step_frame := -1
+## How many frames a drag's region pin survives without a fresh drag step. Long enough to cover a frame or two
+## of a genuine drag, short enough that a release event lost outside the window cannot leave the whole-screen
+## region (the state that once swallowed every click) in place.
+const FRIDGE_DRAG_REGION_HOLD := 6
 
 
 func _limit_fridge_player_drag(from: Vector2, to: Vector2) -> Vector2:
@@ -1442,6 +1490,13 @@ func _limit_fridge_player_drag(from: Vector2, to: Vector2) -> Vector2:
 	if delta.length() <= FRIDGE_PLAYER_DRAG_MAX_STEP:
 		return to
 	return from + delta.normalized() * FRIDGE_PLAYER_DRAG_MAX_STEP
+
+
+## True while a drag is genuinely moving this frame (see _limit_fridge_player_drag's stamp). Used to pin the
+## click-through region during a drag: with motion the stamp is refreshed every frame, and once the motion
+## stops - or a release was never delivered - the stamp ages out and the tight region comes back.
+func _is_fridge_drag_region_pinned() -> bool:
+	return Engine.get_process_frames() - fridge_player_drag_step_frame <= FRIDGE_DRAG_REGION_HOLD
 
 
 ## Any node's drawn rect in screen space: the union of its visible Sprite2D / AnimatedSprite2D children
@@ -1493,6 +1548,11 @@ func _on_fridge_gallery_entry_pressed(entry_id: String) -> void:
 	# 猫嘴物品: the second tab's cards only show what is unlocked in the cat's mouth - a click
 	# on one is informational and must not disturb the idle rotation or start a performance.
 	if entry_id.begins_with("item_"):
+		return
+	# 第一个图标: the Discord card is a LINK rather than a performance - a click opens the invite in the
+	# player's browser and no animation runs, so the idle rotation is left alone.
+	if entry_id == "discord":
+		OS.shell_open(FRIDGE_DISCORD_URL)
 		return
 	# Each gallery entry maps to an animation the fridge man or the cat performs.
 	# A manual preview also keeps the idle rotation quiet for its whole length.
@@ -1944,7 +2004,7 @@ func _on_fridge_box_entry_pressed(entry_id: String) -> void:
 			# 泡泡: the same BB机, squirting bubbles instead of the glyphs.
 			set_fridge_spray_payload("bubble")
 		"cassette_note", "tv_boat":
-			# 只选不演: these two cards only mark the item in hand. They are what the two later cat-mouth
+			# 只选不演: these cards only mark the item in hand. They are what the two later cat-mouth
 			# items UNLOCK (磁带机 -> 音乐符号, 电视机 -> 乌篷船); the items themselves are not cards, since
 			# 不要显示自己的图标 - the action logo on the lid already IS that item's picture. Unlike 球 /
 			# 番茄 / 字体 / 泡泡 (which swap a projectile or a payload) picking one starts NO performance.
@@ -2991,7 +3051,9 @@ func _position_fridge_popups() -> void:
 
 	# The nose hotspot tracks the panel (and its open pop-in scale) every frame.
 	if fridge_nose_button != null and is_instance_valid(fridge_nose_button):
-		if fridge_item_panel != null and fridge_item_panel.visible:
+		# ⚠ Hidden while the room is cleared: the cat itself is gone (「点击冰箱人可以隐藏小猫」), so nothing
+		# of its face may stay clickable.
+		if not fridge_props_hidden and fridge_item_panel != null and fridge_item_panel.visible:
 			var panel_rect: Rect2 = fridge_item_panel.get_global_rect()
 			var nose_size: Vector2 = panel_rect.size * FRIDGE_NOSE_SIZE_FRAC
 			fridge_nose_button.size = nose_size
@@ -3005,7 +3067,7 @@ func _position_fridge_popups() -> void:
 	# different frame, where the bell is somewhere else. Clicking it quits (the user's own exit).
 	if fridge_bell_button != null and is_instance_valid(fridge_bell_button):
 		var bell_rect := _fridge_cat_bell_screen_rect()
-		if bell_rect.size.x > 0.0 and bell_rect.size.y > 0.0:
+		if not fridge_props_hidden and bell_rect.size.x > 0.0 and bell_rect.size.y > 0.0:
 			fridge_bell_button.size = bell_rect.size
 			fridge_bell_button.global_position = bell_rect.position
 			fridge_bell_button.visible = true
@@ -3153,18 +3215,111 @@ func _ensure_all_fridge_items_owned() -> void:
 			fridge_owned_items.append(item_id)
 
 
-## 点击冰箱人: hides (or brings back) the notebook prop and the briefcase. The cat is NEVER
-## hidden. A hidden host cannot be clicked, so any panel it owns is closed with it. (The
-## parameter is not called `hidden`: that name shadows CanvasItem's own `hidden` signal.)
+## 点击冰箱人: hides (or brings back) the notebook prop, the briefcase AND the cat - and while they are
+## away HE becomes a box with only his hair, nose and beard showing (「点击冰箱人可以隐藏小猫、小红书、
+## 公文包，并且冰箱人变成一个盒子」). A second click brings the room back. A hidden host cannot be clicked,
+## so any panel it owns is closed with it. (The parameter is not called `hidden`: that name shadows
+## CanvasItem's own `hidden` signal.)
 func _set_fridge_props_hidden(should_hide: bool) -> void:
 	fridge_props_hidden = should_hide
 	if should_hide:
 		_close_fridge_gallery(false)
 		_close_fridge_box(false)
+		# 小猫隐藏: the cat goes too, and with it its mouth panel and its own item badges.
+		if fridge_item_panel != null and is_instance_valid(fridge_item_panel):
+			fridge_item_panel.visible = false
 	if fridge_gallery_stand != null and is_instance_valid(fridge_gallery_stand):
 		fridge_gallery_stand.visible = not should_hide
 	if fridge_box != null and is_instance_valid(fridge_box):
 		fridge_box.visible = not should_hide
+	if fridge_cat_pet != null and is_instance_valid(fridge_cat_pet):
+		fridge_cat_pet.visible = not should_hide
+		# ⚠ A hidden Node2D still receives input, so the cat is made INERT as well - otherwise a click
+		# where the invisible cat stands would still open its bag.
+		fridge_cat_pet.process_mode = Node.PROCESS_MODE_INHERIT if not should_hide else Node.PROCESS_MODE_DISABLED
+	for ball: Control in fridge_yarn_balls:
+		if ball != null and is_instance_valid(ball):
+			ball.visible = not should_hide
+	# 变成盒子: the disguise replaces his own art every frame (see _update_fridge_box_disguise), and on the way
+	# back he is himself again.
+	var man: Node2D = fridge_player.get("animated_sprite") as Node2D if fridge_player != null and is_instance_valid(fridge_player) else null
+	if man != null and not should_hide:
+		man.visible = true
+	# ⚠ And the player itself is told: its act teardowns re-show his art when they end, so the box state has to be
+	# enforced inside his own _process as well, not only from here (that was 「变成盒子的爷爷 偶尔会眨眼睛」).
+	if fridge_player != null and is_instance_valid(fridge_player):
+		fridge_player.call("set_art_hidden", should_hide)
+	# ⚠ Applied NOW, not on the next frame: the disguise is placed and shown (or put away) with the state change,
+	# so the click is never a frame of him standing there while the room is already gone.
+	_update_fridge_box_disguise()
+
+
+## 变成盒子: the disguise sprite, a child of the fridge man so it rides every drag and flight with him.
+func _ensure_fridge_box_disguise() -> void:
+	if fridge_box_disguise != null and is_instance_valid(fridge_box_disguise):
+		return
+	if fridge_player == null or not is_instance_valid(fridge_player):
+		return
+	var texture: Texture2D = _load_fridge_box_texture(FRIDGE_BOX_DISGUISE_TEXTURE)
+	# Measure the art's own painted bottom row now, so the box always stands exactly where he did, whatever the
+	# art is re-baked to.
+	if texture != null:
+		var art: Image = texture.get_image()
+		if art != null and not art.is_empty():
+			var used: Rect2i = art.get_used_rect()
+			if used.size.y > 0:
+				fridge_box_bottom_row = float(used.position.y + used.size.y)
+	if texture == null:
+		return
+	fridge_box_disguise = Sprite2D.new()
+	fridge_box_disguise.name = "BoxDisguise"
+	fridge_box_disguise.texture = texture
+	fridge_box_disguise.z_index = 1
+	fridge_box_disguise.visible = false
+	fridge_player.add_child(fridge_box_disguise)
+
+
+## ⚠ The PNG on disk wins over the editor's import cache (art is rewritten in place), and the imported
+## resource is the fallback - the one path that also works inside an export, where raw PNGs are not packed.
+func _load_fridge_box_texture(texture_path: String) -> Texture2D:
+	if texture_path.is_empty():
+		return null
+	var file_path: String = ProjectSettings.globalize_path(texture_path) if texture_path.begins_with("res://") else texture_path
+	if FileAccess.file_exists(file_path):
+		var image: Image = Image.new()
+		if image.load(file_path) == OK and not image.is_empty():
+			return ImageTexture.create_from_image(image)
+	if ResourceLoader.exists(texture_path):
+		return load(texture_path) as Texture2D
+	return null
+
+
+## Runs every frame: while the room is cleared he IS a box (his own art hidden); otherwise he is himself.
+func _update_fridge_box_disguise() -> void:
+	if fridge_player == null or not is_instance_valid(fridge_player):
+		return
+	var man: Node2D = fridge_player.get("animated_sprite") as Node2D
+	if man == null:
+		return
+	if not fridge_props_hidden:
+		if fridge_box_disguise != null and is_instance_valid(fridge_box_disguise):
+			fridge_box_disguise.visible = false
+		return
+	man.visible = false
+	_ensure_fridge_box_disguise()
+	if fridge_box_disguise == null or not is_instance_valid(fridge_box_disguise):
+		return
+	# The same canvas as his own art: the box's painted bottom row is placed on the row his feet rest on, so it
+	# stands exactly where he stood - whatever his scale, bob or drag is doing.
+	# ⚠ TWO scales, deliberately: HIS feet row is read at HIS scale, and only the box's own placement (and its
+	# size) uses the halved one - using the halved scale for the feet term parked the box 79 px above the ground.
+	var man_scale_y: float = absf(man.scale.y)
+	var scale_y: float = man_scale_y * FRIDGE_BOX_DISGUISE_SCALE
+	var feet_y: float = man.position.y + (FRIDGE_BOX_DISGUISE_MAN_FEET_ROW - 256.0) * man_scale_y
+	fridge_box_disguise.scale = Vector2(scale_y, scale_y)
+	fridge_box_disguise.position = Vector2(man.position.x,
+		feet_y - (fridge_box_bottom_row - 256.0) * scale_y)
+	fridge_box_disguise.visible = true
 
 
 func _set_fridge_panel_manual_position(panel_id: String, value: bool) -> void:

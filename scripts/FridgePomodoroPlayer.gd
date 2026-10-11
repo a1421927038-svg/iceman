@@ -194,22 +194,31 @@ const TV_FOOT_ROW := 510.0
 # deck. The layout is deliberately the same as the old art (open deck on the left half,
 # canopy right of centre, the two passengers at the far end), so only this path and the
 # deck row below had to move.
-const TV_BOAT_PATH := "res://assets/generated/wupeng_boat_v2.png"
-const TV_BOAT_SCALE := 0.74
-# 站在船头: the boat is placed to his LEFT and drawn MIRRORED, so the bow faces him and he
-# stands on the flat deck's front section (measured: the deck plateau is art row 283 and the
-# flat deck starts at art x ~268; he stands at ~310). His world offset is therefore NEGATIVE:
-# -(512 - 310) * 0.74 art units, i.e. the boat's centre sits (512-310) boat-art px to his
-# left. Mirroring also keeps the canopy and the two fridge-shaped passengers - 白娘子 in
-# ivory robes and 许仙 in the blue-green scholar's robe, both seen from BEHIND - on his FAR
-# side, away from the cat, which idles at his picture-right.
-const TV_BOAT_CENTER_X := -149.5
-# The deck plank line inside the boat art (measured off its row profile: the plateau is row
-# 295 over most of the open half); it is placed under his feet, so he reads as standing IN
-# the boat. ⚠ Re-measure it with the art whenever the boat is regenerated: the new art's
-# deck sits 12px lower in its own canvas than the old art's did.
-const TV_BOAT_DECK_ROW := 295.0
+const TV_BOAT_PATH := "res://assets/generated/wupeng_boat_v3.png"
+# 乌篷船: his boat's own art numbers - the deck plateau he stands on, the row the hull's paint ends at (so the
+# hull can be seated on the ground line) and how far the art's centre sits to his left.
+# ⚠ Measured off the PNG's row profile: re-measure whenever the art is regenerated (tests/test_tv_reaction.gd
+# re-derives them from the file, so a regenerated boat cannot keep stale numbers).
+const TV_BOATS := {
+	"wupeng": {
+		# ⚠ He stands at the boat's BOW (「站在船头上」): the sprite is MIRRORED, so an art point x_a lands
+		# (256 - x_a) * variant_scale to the right of the sprite's centre, and the centre must therefore sit
+		# -(256 - x_a) * variant_scale from him. x_a = 140 is on the bow's flat deck (its open deck is art x
+		# 0..250, the bow tip ~0, the canopy 272..470) - 92 put him on the very tip and read too far right.
+		# The v2 value -149.5 is the same formula with x_a = 54.
+		# stand_sink art px lifts the boat so he stands IN it rather than on the gunwale. ⚠ It lifts the hull with
+		# it (the sampan's hull sat ~8 px under the ground line, so 16 * 1.40 * 0.39 ≈ 8.7 px lands it on it).
+		"path": "res://assets/generated/wupeng_boat_v3.png",
+		"scale": 1.40, "deck_row": 262.0, "hull_row": 330.0, "center_x": -162.4, "stand_sink": 16.0,
+	},
+}
+
 const TV_BOAT_POP_TIME := 0.35
+# 船底不缺失: the boat's art carries its hull BELOW the deck row (the sampan: deck plateau 295, paint ending
+# at row 406). Placed off his feet alone, that hull hung ~63 px below the desktop's ground line - past the work
+# area, where the user saw 「船底缺失」. The whole staging is therefore LIFTED by the hull's own depth, so the
+# hull's bottom lands on the ground line and he stands on the deck of a boat that rests on the desktop.
+# ⚠ The rows live in TV_BOATS per variant; re-measure them whenever a boat PNG is regenerated.
 const TV_BOAT_BOB := 5.0
 const TV_BOAT_BOB_SPEED := 1.7
 const TV_BOAT_TILT := 0.02
@@ -490,6 +499,10 @@ const DOZE_REQUESTED_STAND_TIME := 0.25
 var doze: FridgeDozeCycle
 # How far the body sags / jolts this frame while dozing (see _update_doze).
 var doze_body_offset := Vector2.ZERO
+## 变成盒子: true while the box disguise owns his visual. Every act's teardown sets `animated_sprite.visible =
+## true` when it ends, which is exactly what made the boxed man's eyes blink back for one frame
+## (「变成盒子的爷爷 偶尔会眨眼睛」), so the visible flag is forced off at the END of every _process instead.
+var art_hidden := false
 
 
 func _ready() -> void:
@@ -565,7 +578,19 @@ func _process(delta: float) -> void:
 		if ball_drop_active:
 			offset += _get_ball_drop_shake()
 		animated_sprite.position = SPRITE_BASE_POSITION + offset + doze_body_offset + Vector2(0.0, sprite_scale_drop)
+	if art_hidden and animated_sprite != null and is_instance_valid(animated_sprite):
+		# ⚠ LAST WORD on visibility, deliberately: one of the act teardowns above may have set
+		# `animated_sprite.visible = true` (that was the boxed man blinking), and running this at the end of his
+		# own _process also puts it after the LEVEL's per-frame work.
+		animated_sprite.visible = false
 	queue_redraw()
+
+
+## 变成盒子: switch his own art off (or back on) while the box disguise owns the visual.
+func set_art_hidden(value: bool) -> void:
+	art_hidden = value
+	if not value and animated_sprite != null and is_instance_valid(animated_sprite):
+		animated_sprite.visible = true
 
 
 func set_pomodoro_state(new_phase: String, new_progress: float, new_time_text: String) -> void:
@@ -1464,8 +1489,11 @@ func stop_tv_reaction() -> void:
 	tv_hold_time = 0.0
 	tv_preview_timer = 0.0
 	tv_boat_pop = 0.0
+	if animated_sprite != null and is_instance_valid(animated_sprite):
+		animated_sprite.visible = true
 	if tv_boat_sprite != null and is_instance_valid(tv_boat_sprite):
 		tv_boat_sprite.visible = false
+		tv_boat_sprite.rotation = 0.0
 	if tv_pole_sprite != null and is_instance_valid(tv_pole_sprite):
 		tv_pole_sprite.visible = false
 	if tv_splash_sprite != null and is_instance_valid(tv_splash_sprite):
@@ -1486,10 +1514,30 @@ func is_tv_fishing() -> bool:
 ## a gentle standing sway while he works the pole.
 func _get_tv_offset() -> Vector2:
 	var elapsed: float = TV_TOTAL_TIME if tv_hold_active else TV_TOTAL_TIME - tv_reaction_timer
+	# 船底: he rides the boat, so the whole staging sits the hull's depth higher (see TV_BOAT_HULL_ROW).
+	# The pole hangs off this offset too, so it lifts with him and stays in his hands.
+	var lift := Vector2(0.0, -_get_tv_lift())
 	# The motion scales with the performance, so the smaller scene shakes by less.
 	if elapsed < 1.0:
-		return Vector2(sin(elapsed * 52.0), cos(elapsed * 44.0)) * TV_POOF_SHAKE * TV_PERFORMANCE_SCALE
-	return Vector2(0.0, sin(elapsed * 3.4) * TV_POLE_SWAY * TV_PERFORMANCE_SCALE)
+		return lift + Vector2(sin(elapsed * 52.0), cos(elapsed * 44.0)) * TV_POOF_SHAKE * TV_PERFORMANCE_SCALE
+	return lift + Vector2(0.0, sin(elapsed * 3.4) * TV_POLE_SWAY * TV_PERFORMANCE_SCALE)
+
+
+## How far the TV staging is raised so the boat's hull clears the ground line (see TV_BOAT_BOB's note).
+func _get_tv_lift() -> float:
+	return (_tv_boat_param("hull_row") - _tv_boat_param("deck_row")) * _tv_boat_scale()
+
+
+## The boat's own numbers (see TV_BOATS).
+func _tv_boat_param(key: String) -> float:
+	return float(TV_BOATS["wupeng"].get(key, 0.0))
+
+
+## The boat: popped out of nothing as the transformation lands, then bobbing on the water
+
+
+func _tv_boat_scale() -> float:
+	return _tv_boat_param("scale") * TV_PERFORMANCE_SCALE
 
 
 func _update_tv_reaction(delta: float) -> void:
@@ -1596,7 +1644,7 @@ func _update_tv_splash(delta: float) -> void:
 func _ensure_tv_boat_sprite() -> void:
 	if tv_boat_sprite != null and is_instance_valid(tv_boat_sprite):
 		return
-	var texture: Texture2D = _load_texture(TV_BOAT_PATH)
+	var texture: Texture2D = _load_texture(str(TV_BOATS["wupeng"].get("path", TV_BOAT_PATH)))
 	if texture == null:
 		return
 	tv_boat_sprite = Sprite2D.new()
@@ -1651,19 +1699,24 @@ func _update_tv_boat(delta: float) -> void:
 		return
 	tv_boat_pop = minf(tv_boat_pop + delta / TV_BOAT_POP_TIME, 1.0)
 	var pop_ease: float = tv_boat_pop * tv_boat_pop * (3.0 - 2.0 * tv_boat_pop)
-	# 整体缩小: the boat shrinks with the man, so it stays in proportion to him.
-	var boat_scale: float = TV_BOAT_SCALE * TV_PERFORMANCE_SCALE
+	# 整体缩小: the boat shrinks with the man, so it stays in proportion to him. ⚠ The variant's own scale and
+	# rows (see TV_BOATS).
+	var boat_scale: float = _tv_boat_scale()
 	tv_boat_sprite.visible = true
 	# Mirrored (negative x scale) so the bow points at him while the boat sits to his left.
 	tv_boat_sprite.scale = Vector2(-boat_scale, boat_scale) * (0.6 + 0.4 * pop_ease)
 	# His feet are the anchor: the boat's deck plank line is placed on the row he stands
 	# on, so he reads as standing IN the boat whatever the boat art's own margins are.
-	var man_scale: float = display_height / float(TV_FRAME_SIZE.y) * TV_PERFORMANCE_SCALE
-	var feet_y: float = SPRITE_BASE_POSITION.y + sprite_scale_drop + (TV_FOOT_ROW - 256.0) * man_scale
-	var deck_y: float = feet_y - (TV_BOAT_DECK_ROW - 256.0) * boat_scale
+	# ⚠ His feet are MEASURED off the sprite he is actually drawn with (`animated_sprite.position` already
+	# carries the performance offset, the doze sag and the scale drop), never derived from a scale guess: the
+	# derived row drifted ~40 px and left the boat's hull in the desktop's ground line.
+	var man_scale: float = absf(animated_sprite.scale.y)
+	var feet_y: float = animated_sprite.position.y + (TV_FOOT_ROW - 256.0) * man_scale
+	var deck_y: float = feet_y - (_tv_boat_param("deck_row") - 256.0) * boat_scale \
+		- _tv_boat_param("stand_sink") * boat_scale
 	tv_boat_sprite.position = Vector2(
-		SPRITE_BASE_POSITION.x + TV_BOAT_CENTER_X * TV_PERFORMANCE_SCALE,
-		deck_y + _get_tv_offset().y * 0.6 + sin(elapsed * TV_BOAT_BOB_SPEED) * TV_BOAT_BOB * TV_PERFORMANCE_SCALE)
+		SPRITE_BASE_POSITION.x + _tv_boat_param("center_x") * TV_PERFORMANCE_SCALE,
+		deck_y + (_get_tv_offset().y + _get_tv_lift()) * 0.6 + sin(elapsed * TV_BOAT_BOB_SPEED) * TV_BOAT_BOB * TV_PERFORMANCE_SCALE)
 	tv_boat_sprite.rotation = sin(elapsed * TV_BOAT_BOB_SPEED * 0.7) * TV_BOAT_TILT
 
 

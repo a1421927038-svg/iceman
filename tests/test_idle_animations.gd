@@ -202,8 +202,9 @@ func _run() -> void:
 	if content_h <= visible_h:
 		failures.append("backpack content fits without scrolling, so the pull-down is untested")
 	# 分页 raised the backpack by its two-page bookmark row, so the ceiling sits just above the
-	# two-row tabbed panel (~280 now the bookmark ribbons live at the top corner) rather than at 400.
-	if panel.custom_minimum_size.y > 480.0:
+	# two-row tabbed panel. ⚠ Doubled with the book itself (「小红书打开后的UI所有元素也放大一倍」),
+	# so the ceiling moved from 480 to 960.
+	if panel.custom_minimum_size.y > 960.0:
 		failures.append("backpack grew past two rows (%.0f)" % panel.custom_minimum_size.y)
 	# 隐藏滑块: the backpack shows no scroll slider any more - the wheel still scrolls it.
 	if scroll != null and scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_SHOW_NEVER:

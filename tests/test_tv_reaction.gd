@@ -112,8 +112,11 @@ func _run() -> void:
 			seated_cells += 1
 	print("boat = ", boat_img.get_size(), " used=", boat_used,
 		" deck columns=", deck_cells, " right-half columns=", seated_cells)
-	ok = ok and boat_img.get_width() == 1024 and boat_img.get_height() == 512
-	ok = ok and boat_used.size.y > 200 and boat_used.size.x > 900
+	# ⚠ The sampan was REGENERATED (v3, 512x512): the old wide-canvas expectations (1024x512, a >900 px wide
+	# subject) describe retired art. Assert the shape the code now draws instead, so a re-skin still has to be a
+	# full-width boat with a real hull under its deck.
+	ok = ok and boat_img.get_width() >= 512 and boat_img.get_height() == 512
+	ok = ok and boat_used.size.x > 490 and boat_used.size.y > 140
 
 	# ---- the performance itself ----
 	var finished := [0]
@@ -160,7 +163,8 @@ func _run() -> void:
 	var man_scale_p: float = float(player.get("display_height")) / 512.0 \
 		* float(consts_early.get("TV_PERFORMANCE_SCALE", 1.0))
 	var feet_y_p: float = (consts_early.get("SPRITE_BASE_POSITION", Vector2.ZERO) as Vector2).y \
-		+ float(player.get("sprite_scale_drop")) + (510.0 - 256.0) * man_scale_p
+		+ float(player.get("sprite_scale_drop")) + (510.0 - 256.0) * man_scale_p \
+		- float(player.call("_get_tv_lift"))  # 船底: his feet ride the LIFTED staging
 	# Drive the atlas frame by hand: an AnimatedSprite2D advances on REAL frames, and this test
 	# parks the player's _process, so the sprite would otherwise sit on frame 0 forever. The
 	# PUSH frame is the beat where the pole is out and its tip is deepest - the splash beat.
@@ -194,9 +198,13 @@ func _run() -> void:
 	var consts: Dictionary = (player.get_script() as Script).get_script_constant_map()
 	var base_position: Vector2 = consts.get("SPRITE_BASE_POSITION", Vector2.ZERO)
 	var tv_scale: float = float(consts.get("TV_PERFORMANCE_SCALE", 1.0))
-	var boat_scale: float = float(consts.get("TV_BOAT_SCALE", 0.74)) * tv_scale
-	var deck_row: float = float(consts.get("TV_BOAT_DECK_ROW", 290.0))
-	var center_x: float = float(consts.get("TV_BOAT_CENTER_X", 231.0)) * tv_scale
+	# ⚠ The boat's numbers live in TV_BOATS, so the expectations come from that table - the old TV_BOAT_*
+	# constants are only its history.
+	var boats_now: Dictionary = consts.get("TV_BOATS", {})
+	var wupeng_now: Dictionary = boats_now.get("wupeng", {})
+	var boat_scale: float = float(wupeng_now.get("scale", 0.74)) * tv_scale
+	var deck_row: float = float(wupeng_now.get("deck_row", 290.0))
+	var center_x: float = float(wupeng_now.get("center_x", 231.0)) * tv_scale
 	# 整体缩小: the whole performance must really be drawn SMALLER than the idle body.
 	print("scale: performance=", tv_scale, " sprite_scale=", snappedf(anim.scale.x, 0.0001),
 		" drawn_height=", snappedf(anim.scale.x * 512.0, 0.1), " display_height=", player.get("display_height"))
@@ -206,7 +214,11 @@ func _run() -> void:
 	# and his feet row is what _set_sprite_scale_for's compensation puts it on.
 	var drop: float = float(player.get("sprite_scale_drop"))
 	var man_scale: float = float(player.get("display_height")) / 512.0 * tv_scale
-	var feet_y: float = base_position.y + drop + (510.0 - 256.0) * man_scale
+	# 船底不缺失: the whole staging is LIFTED by the boat's hull depth (_get_tv_lift), so his feet row - and
+	# with it the deck plank line - sits that much higher. Without this the boat hung below the desktop's
+	# ground line and the user saw a missing hull.
+	var tv_lift: float = float(player.call("_get_tv_lift"))
+	var feet_y: float = base_position.y + drop + (510.0 - 256.0) * man_scale - tv_lift
 	var deck_y: float = boat.position.y + (deck_row - 256.0) * boat_scale
 	print("feet_y=", snappedf(feet_y, 0.1), " deck_y=", snappedf(deck_y, 0.1),
 		" drop=", snappedf(drop, 0.1), " boat x=", snappedf(boat.position.x, 0.1),
@@ -323,6 +335,39 @@ func _run() -> void:
 	ok = ok and holding
 	ok = ok and not bool(level_player.get("tv_hold_active")) and level_anim.animation == "idle"
 	ok = ok and str(scene.get("fridge_phase")) == "idle"
+
+	# ---------- 乌篷船: the boat table carries the art's own rows (where he stands, where the hull's paint ends),
+	# so it is checked against the PNG rather than trusted ----------
+	var boat_table: Dictionary = (level_player.get_script() as Script).get_script_constant_map().get("TV_BOATS", {})
+	var boat_ok := true
+	for variant_id: String in boat_table.keys():
+		var entry: Dictionary = boat_table[variant_id]
+		var art: Image = Image.load_from_file(ProjectSettings.globalize_path(str(entry.get("path", ""))))
+		if art == null:
+			boat_ok = false
+			continue
+		var used: Rect2i = art.get_used_rect()
+		var boat_hull_row: float = float(entry.get("hull_row", 0.0))
+		var boat_deck_row: float = float(entry.get("deck_row", 0.0))
+		print("boat variant ", variant_id, ": art=", art.get_size(), " used_bottom=",
+			used.position.y + used.size.y - 1, " deck_row=", boat_deck_row, " hull_row=", boat_hull_row)
+		boat_ok = boat_ok and absf(boat_hull_row - float(used.position.y + used.size.y - 1)) <= 2.0
+		boat_ok = boat_ok and boat_deck_row < boat_hull_row
+	ok = ok and boat_table.size() == 1 and boat_ok
+	# 冰山 was REMOVED on request: the 电视机 slot offers its one card, 乌篷船, and the liner boat, the
+	# transformation animation and the berg/couple props must all be gone with it.
+	ok = ok and not boat_table.has("liner")
+	var box_icons: Array = []
+	for entry: Dictionary in (scene.get_script() as Script).get_script_constant_map().get("FRIDGE_BOX_ENTRIES", []):
+		if str(entry.get("action_name", "")) == "电视机":
+			box_icons.append(entry.get("id"))
+	print("电视机 slot cards=", box_icons)
+	ok = ok and box_icons == ["tv_boat"]
+	ok = ok and level_player.get("tv_liner_active") == null and level_player.get("tv_iceberg_sprite") == null
+	ok = ok and not level_anim.sprite_frames.has_animation("tv_liner_morph")
+	scene.call("_on_fridge_box_entry_pressed", "tv_boat")
+	print("after 乌篷船: selected=", scene.get("fridge_box_selected_id"))
+	ok = ok and str(scene.get("fridge_box_selected_id")) == "tv_boat"
 
 	# Keep the real save byte-identical (this test drives the real take-out path).
 	scene.set("fridge_owned_items", save_owned)

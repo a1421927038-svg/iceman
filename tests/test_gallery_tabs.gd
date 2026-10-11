@@ -128,7 +128,7 @@ func _run() -> void:
 		and style_b.texture.get_size() == Vector2(70.0, 160.0)
 	# 素净书签: a narrower strip, and it carries NOTHING - no text and no icon (its colour and its
 	# place in the row mark which page is on show)
-	ok = ok and tab_a.custom_minimum_size == Vector2(46.0 * 2.0 / 3.0, 70.0)
+	ok = ok and tab_a.custom_minimum_size == Vector2(92.0 * 2.0 / 3.0, 140.0)
 	ok = ok and tab_a.icon == null and tab_b.icon == null
 	ok = ok and tab_a.text.is_empty() and tab_b.text.is_empty()
 	# 摊开的书 + 去掉边框: the board IS the open-book art, and the cells carry NO artwork - the icons

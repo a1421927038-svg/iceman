@@ -60,19 +60,38 @@ func _run() -> void:
 	level_player.global_position = viewport.get_canvas_transform().affine_inverse() \
 		* viewport.get_mouse_position()
 
-	# ---- 2) 点击冰箱人: a plain click hides the notebook and the briefcase (NOT the cat) ----
+	# ---- 2) 点击冰箱人: a plain click clears the room - the notebook, the briefcase AND the cat - and turns
+	# HIM into a box with only his hair, nose and beard showing (「点击冰箱人可以隐藏小猫、小红书、公文包，
+	# 并且冰箱人变成一个盒子」) ----
 	_click(scene, viewport)
+	var man: Node2D = scene.get("fridge_player").get("animated_sprite") as Node2D
+	var disguise: Sprite2D = scene.get("fridge_box_disguise")
 	print("after click 1: hidden=", scene.get("fridge_props_hidden"),
-		" cat=", cat.visible, " book=", stand.visible, " case=", box.visible)
+		" cat=", cat.visible, " book=", stand.visible, " case=", box.visible,
+		" man=", man.visible, " box_shown=", disguise.visible if disguise != null else false)
 	ok = ok and bool(scene.get("fridge_props_hidden"))
-	ok = ok and cat.visible and not stand.visible and not box.visible
+	ok = ok and not cat.visible and not stand.visible and not box.visible
+	ok = ok and not man.visible and disguise != null and disguise.visible
+	# 缩小一倍: the box is drawn at HALF his own scale ...
+	ok = ok and absf(absf(disguise.scale.y) - absf(man.scale.y) * 0.5) < 0.001
+	# ... and it still stands where he did: its painted bottom row is put on his own feet row
+	ok = ok and absf((disguise.position.y + (float(scene.get("fridge_box_bottom_row")) - 256.0) * absf(disguise.scale.y))
+		- (man.position.y + (510.0 - 256.0) * absf(man.scale.y))) < 0.5
+	# ⚠ And the player's OWN art stays off even when an act teardown re-shows it (the box used to blink)
+	var player_node: Node = scene.get("fridge_player")
+	player_node.call("set_art_hidden", true)
+	if player_node.has_method("_process"):
+		player_node.call("_process", 0.016)
+	ok = ok and not man.visible
 
 	# ---- 3) a second click brings them all back ----
 	_click(scene, viewport)
 	print("after click 2: hidden=", scene.get("fridge_props_hidden"),
-		" cat=", cat.visible, " book=", stand.visible, " case=", box.visible)
+		" cat=", cat.visible, " book=", stand.visible, " case=", box.visible,
+		" man=", man.visible, " box_shown=", disguise.visible if disguise != null else false)
 	ok = ok and not bool(scene.get("fridge_props_hidden"))
 	ok = ok and cat.visible and stand.visible and box.visible
+	ok = ok and man.visible and not disguise.visible
 
 	# ---- 4) a press that MOVED him (dragging) is not a click: it must not toggle ----
 	_press(scene, viewport)

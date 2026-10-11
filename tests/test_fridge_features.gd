@@ -156,6 +156,8 @@ func _run() -> void:
 	var panel_consts: Dictionary = (load("res://addons/骨骼动画/action_gallery_panel.gd") as Script).get_script_constant_map()
 	# 上面一排: the row shows ACTION_PAGE_SIZE logos at a time and the wheel turns the page.
 	var page_size: int = int(panel_consts.get("ACTION_PAGE_SIZE", 3))
+	# ⚠ SEVEN entries once carried a second 电视机 card (冰山) - it was removed on request, so the box is
+	# back to SIX entries in FOUR groups, one card per later cat-mouth item.
 	var entries_ok := box_entries.size() == 6
 	var group_count := 0
 	var group_sizes: Array = []
@@ -185,9 +187,8 @@ func _run() -> void:
 		" item_icons=", found.get("icons", 0),
 		" tray_cells=", found.get("cells", 0), " empty=", found.get("empty_slots", 0),
 		" labels=", found.get("labels", []))
-	# 猫嘴里的动画: FOUR actions now - 抛球杂耍 and BB机来讯 (two cards each), plus the two items the
-	# cat's bag gained later (磁带机 / 电视机), which show ONLY the one replacement each unlocks
-	# (音乐符号 / 乌篷船): 不要显示自己的图标, because the lid's own logo already IS that item.
+	# 猫嘴里的动画: FOUR actions - 抛球杂耍 and BB机来讯 (two cards each), plus the two items the
+	# cat's bag gained later (磁带机 / 电视机), one card each.
 	ok = ok and entries_ok and group_count == 4 and group_sizes == [2, 2, 1, 1]
 	# 上面一排: one BUTTON per action, but only ACTION_PAGE_SIZE of them fit on a page - the row shows
 	# the first three and the wheel turns to the fourth. The row is furniture above ONE item grid (a
@@ -429,18 +430,19 @@ func _run() -> void:
 		ok = ok and swing > book_swing
 		ok = ok and minf(minf(row_ink.r, row_ink.g), row_ink.b) > 0.9
 		ok = ok and float(row_arrow.get("fade_time")) < book_fade
-		# 整体缩小: the box's arrow is SMALLER than the book's, while keeping its shape/style.
+		# ⚠ 箭头尺寸: it used to be SMALLER than the book's (20 against 26); 「公文包打开后的整个UI放大一倍」 doubled the
+		# whole case, arrow included, so it is 40 now while the book's arrow stays exactly as it was.
 		var book_arrow_size: Vector2 = panel_consts.get("SCROLL_ARROW_SIZE", Vector2.ZERO)
 		var row_arrow_size: Vector2 = panel_consts.get("ACTION_ARROW_SIZE", Vector2.ZERO)
 		print("prop box 从左到右 尺寸: arrow=", row_arrow_size, " (book ", book_arrow_size, ")")
-		ok = ok and row_arrow_size.x > 0.0 and row_arrow_size.x < book_arrow_size.x
+		ok = ok and row_arrow_size == Vector2(40.0, 40.0) and book_arrow_size == Vector2(52.0, 52.0)
 		ok = ok and row_arrow.size == row_arrow_size
-		# 图标太大: the action buttons and the logos inside them are smaller than they were (56 / 40).
+		# 整个UI放大一倍: the lid row's logos and buttons followed the case up (they were 40 / 56).
 		var row_icon: Vector2 = panel_consts.get("ACTION_BUTTON_ICON_SIZE", Vector2.ZERO)
 		var row_button := Vector2(float(panel_consts.get("ACTION_BUTTON_WIDTH", 0.0)),
 			float(panel_consts.get("ACTION_BUTTON_HEIGHT", 0.0)))
 		print("prop box 动作图标尺寸: icon=", row_icon, " button=", row_button)
-		ok = ok and row_icon == Vector2(40.0, 40.0) and row_button == Vector2(56.0, 56.0)
+		ok = ok and row_icon == Vector2(80.0, 80.0) and row_button == Vector2(112.0, 112.0)
 		# The row follows whichever card was picked last, so the page it starts on is not fixed - only
 		# that a click TURNS it and a second click turns it back.
 		var page_start: int = int(box_panel.get("_action_page"))
