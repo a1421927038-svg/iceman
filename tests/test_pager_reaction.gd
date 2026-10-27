@@ -247,6 +247,10 @@ func _run() -> void:
 	# ---- clicking the pager in the cat's mouth starts the sequence ----
 	var scene: Node = load("res://scenes/FridgeLevel.tscn").instantiate()
 	get_root().add_child(scene)
+
+	# 解锁进度: pin the FULLY UNLOCKED progress (without writing the player's save) - this suite drives
+	# the item take-out path, which needs the item owned.
+	scene.call("_unlock_all_fridge_progress_for_tests")
 	await process_frame
 	await process_frame
 	# Taking the pager out drives the real (saving) path; keep the player's own

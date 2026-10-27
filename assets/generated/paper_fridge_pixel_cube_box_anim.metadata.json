@@ -1,0 +1,40 @@
+{
+	"animation_name": "cute_pixel_art_square_refrigerator_cube_box_character_bouncing_happily_blinking_eyes_and_wiggling_little_shoes",
+	"animation_style": "",
+	"animation_type": "cute pixel art square refrigerator cube box character bouncing happily, blinking eyes and wiggling little shoes",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 128,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 128,
+			"w": 128,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 128,
+			"w": 128,
+			"x": 128,
+			"y": 0
+		},
+		{
+			"h": 128,
+			"w": 128,
+			"x": 256,
+			"y": 0
+		}
+	],
+	"frame_width": 128,
+	"name": "paper_fridge_pixel_cube_box_anim",
+	"prompt": "cute pixel art square refrigerator cube box character bouncing happily, blinking eyes and wiggling little shoes",
+	"rows": 1,
+	"source_image": "res://assets/generated/paper_fridge_pixel_cube_box.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 128,
+	"spritesheet_path": "res://assets/generated/paper_fridge_pixel_cube_box_anim.png",
+	"spritesheet_width": 384,
+	"type": "animation"
+}

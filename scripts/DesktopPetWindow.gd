@@ -37,6 +37,13 @@ const TRAY_ICON_PATH := "res://icon.png"
 ## can leave the root viewport clearing with an OPAQUE colour again - and at startup that lands on whichever
 ## frame the window first resizes, which is why it only ever struck 偶尔.
 const TRANSPARENT_CLEAR_COLOR := Color(0.0, 0.0, 0.0, 0.0)
+## ⚠⚠ 变透明 workaround: how often to ask DWM to re-evaluate this window's composition (see
+## _nudge_for_recomposite). 0.0 disables it.
+const RECOMPOSITE_NUDGE_INTERVAL := 4.0
+
+## 中英文切换: the tray tooltip's original 中文, used as the key into FridgeStrings' table (see
+## refresh_tray_tooltip - a StatusIndicator is not a Control, so nothing translates it for us).
+const TRAY_TOOLTIP_TEXT := "冰箱爷爷桌面宠物：左键显示/隐藏，右键退出"
 
 ## The level that supplies the interactive rects (see FridgeLevel.desktop_pet_hit_rects).
 var host: Node
@@ -72,6 +79,8 @@ var interactive_applied := false
 var applied_usable := Vector2i.ZERO
 var applied_position := Vector2i.ZERO
 var framed_canvas := Vector2.ZERO
+## Counts up to RECOMPOSITE_NUDGE_INTERVAL (see _nudge_for_recomposite).
+var recomposite_nudge_time := 0.0
 
 
 func setup(new_host: Node) -> void:
@@ -101,13 +110,23 @@ func _create_tray_icon() -> void:
 		return
 	var indicator := StatusIndicator.new()
 	indicator.name = "TrayIcon"
-	indicator.tooltip = "冰箱爷爷桌面宠物：左键显示/隐藏，右键退出"
+	# 中英文切换: a StatusIndicator is NOT a Control, so its tooltip is not translated for us - it goes
+	# through FridgeStrings' table by hand (see refresh_tray_tooltip).
+	FridgeStrings.install()
+	indicator.tooltip = FridgeStrings.t(TRAY_TOOLTIP_TEXT)
 	var icon_texture := load(TRAY_ICON_PATH) as Texture2D
 	if icon_texture != null:
 		indicator.icon = icon_texture
 	indicator.pressed.connect(_on_tray_pressed)
 	add_child(indicator)
 	tray_icon = indicator
+
+
+## 中英文切换: called by the level after a language switch, since nothing re-translates a
+## StatusIndicator's tooltip on its own.
+func refresh_tray_tooltip() -> void:
+	if tray_icon != null and is_instance_valid(tray_icon):
+		tray_icon.tooltip = FridgeStrings.t(TRAY_TOOLTIP_TEXT)
 
 
 func _on_tray_pressed(mouse_button: int, _mouse_position: Vector2) -> void:
@@ -140,6 +159,14 @@ func _process(_delta: float) -> void:
 	if COVER_DESKTOP:
 		_cover_desktop()
 	_update_passthrough()
+	# ⚠ 变透明 workaround: the fade is not announced by any notification (it can appear seconds after launch with
+	# another window merely sitting in front), so a slow timer asks for a recomposition instead of waiting for an
+	# event that never comes. See _nudge_for_recomposite for why this is a nudge and not a settings change.
+	if RECOMPOSITE_NUDGE_INTERVAL > 0.0:
+		recomposite_nudge_time += _delta
+		if recomposite_nudge_time >= RECOMPOSITE_NUDGE_INTERVAL:
+			recomposite_nudge_time = 0.0
+			_nudge_for_recomposite()
 
 
 ## The per-frame half of the transparency guard: a plain Viewport property (no Win32 call), so it can run every
@@ -160,6 +187,51 @@ func _force_transparency() -> void:
 	RenderingServer.set_default_clear_color(TRANSPARENT_CLEAR_COLOR)
 
 
+## ⚠⚠ 变透明 (the OS-level half). The pet window is a transparent, layered, always-on-top sheet, and Windows can
+## drop or mangle that state when ANOTHER window is foregrounded over it - the user's repro is exact:
+## 「打开资源管理器界面后，再运行游戏超过5秒后，游戏场景中的所有元素都会变透明」. The SCENE is provably fine
+## throughout (a real window measures mean_alpha 0.94, max_alpha 1.0 and every modulate white, sampled for 11.5 s),
+## so the loss is in how Windows composites this window - and it cannot be captured for evidence either:
+## BitBlt/CopyFromScreen does not see a layered window, so a PowerShell screen grab shows only whatever ordinary
+## window is behind it. Re-assigning the flags is the one lever GDScript has over it: each write makes Godot
+## re-apply its transparency path (DwmEnableBlurBehindWindow plus the layered styles), which is what restores a
+## state Windows dropped behind our back.
+## ⚠⚠ Written UNCONDITIONALLY - reading the flag first and skipping the "already true" case would make this a
+## no-op in exactly the situation it exists for. ⚠ Only at genuine re-make moments (a resize/re-show, a focus
+## change, the tray restore): never per frame, where each write would be a Win32 style change every frame.
+func _reassert_window_style() -> void:
+	var window := get_window()
+	if window == null:
+		return
+	window.transparent = true
+	window.always_on_top = true
+	_force_transparency()
+	_nudge_for_recomposite()
+
+
+## ⚠⚠ 变透明 workaround, and only a workaround. Windows composites this window with DWM blur-behind (that is how
+## Godot implements per-pixel transparency on Windows since PR #38629), and there is an open engine issue for it:
+## godotengine/godot#108920 "transparent window faintly tints the background" - the window faintly whitens/fades
+## what is behind it, and "the issue is inconsistent, sometimes the window is more opaque/transparent than other
+## times", reported on a GeForce laptop with this same compatibility renderer. The user's repro matches it exactly:
+## 「只要打开了资源管理器界面，再打开游戏运行超过5秒，就会出现全部元素变成透明的情况，只要移动下资源管理器界面
+## 就变回正常的颜色」 - i.e. DWM is holding a stale/wrong composition of our sheet, and ANY window motion makes it
+## re-evaluate. GDScript cannot read the composited result, so this cannot be detected, only invited: a
+## window position write forces DWM to recompose. ⚠ The move is 1 px and is undone in the SAME call, so no frame
+## is ever presented at the shifted position and nothing about the pets' layout changes (every coordinate here is
+## window space, not screen space). If it ever proves insufficient, raise RECOMPOSITE_NUDGE_INTERVAL's effect by
+## nudging on a different axis, or turn it off with 0.0 - the real cure is on the driver side: NVIDIA's in-game
+## overlay attaching to a blur-behind window, and the per-app "high performance GPU" preference, both changed this
+## bug's behaviour for the reporter above.
+func _nudge_for_recomposite() -> void:
+	var window := get_window()
+	if window == null:
+		return
+	var position := window.position
+	window.position = position + Vector2i(1, 0)
+	window.position = position
+
+
 ## ⚠⚠ 切换其他软件后变透明: opening Explorer or another application's window FOREGROUNDS it over this one and
 ## re-shows/re-makes ours when the player comes back - 「开始运行游戏时，如果打开文件夹或切换其他软件界面有时会出现
 ## 场景中所有元素变透明，变亮」. Those notifications are exactly the moments the transparent background can be
@@ -169,7 +241,9 @@ func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_APPLICATION_FOCUS_IN, NOTIFICATION_APPLICATION_FOCUS_OUT, \
 		NOTIFICATION_WM_WINDOW_FOCUS_IN, NOTIFICATION_WM_WINDOW_FOCUS_OUT:
-			_force_transparency()
+			# ⚠ The WINDOW-level re-assert too, not only the viewport one: this is the moment another app took
+			# the foreground, which is the reported trigger (the Explorer repro).
+			_reassert_window_style()
 
 
 ## 无边框 / 透明 / 置顶 / 点击穿透: the flags that turn an ordinary game window into a desktop overlay.
@@ -234,9 +308,11 @@ func _cover_desktop() -> void:
 		# lets the clicks through (see the region below).
 		window.size = screen_rect.size
 		window.position = screen_rect.position
-		# ⚠ 透明: a resize re-makes the window, and the transparent background can be dropped with it - which
-		# is exactly the startup frame the 「所有元素突然变透明」 reports came from.
-		_force_transparency()
+		# ⚠ 透明: a resize re-makes the window, and BOTH the transparent background and the window's own
+		# transparent/always-on-top state can be dropped with it. Re-assert the WINDOW flags here too, not only
+		# the viewport: the work area changes whenever Explorer or the taskbar does, which is the reported
+		# trigger for 「所有元素突然变透明」 (see _reassert_window_style).
+		_reassert_window_style()
 	var viewport := get_viewport()
 	if viewport == null:
 		return

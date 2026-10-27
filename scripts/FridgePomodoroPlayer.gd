@@ -256,6 +256,112 @@ const TV_SPLASH_RISE := 10.0
 const TV_POOF_SHAKE := 8.0
 const TV_POLE_SWAY := 2.0
 
+# 复古电脑 (computer) countdown performance:
+# 1. A 90s Windows XP CRT desktop computer (`paper_90s_xp_computer.png`) appears in the scene.
+# 2. Fridge Grandpa transforms into a CD-ROM optical disc (`paper_fridge_cd_disc.png`) that flattens
+#    into a horizontal perspective (`scale.y = cd_sc * 0.28`) and slides horizontally into the PC case's
+#    CD-ROM drive slot (`是水平插入，不是竖着插入`).
+# 3. The entire computer monitor screen transforms into a World of Warcraft Dark Portal with a swirling
+#    green vortex (`paper_90s_pc_green_portal_screen_anim.png`).
+# 4. At most ONE cute green Orc (`COMPUTER_DROP_MAX_POOL = 1`, `paper_cute_mini_green_orc_run.png`) hops
+#    out of the green portal and runs laps around the computer!
+# 5. Meanwhile, various WoW equipment items and Hearthstone rocks (`COMPUTER_LOOT_PATHS`) fly out of the
+#    green portal at intervals and drop onto the ground until the countdown ends!
+# 6. When the countdown ends (`play_computer_ending`), the cute green Orc takes out a Hearthstone
+#    (`paper_hearthstone_rock.png`) and teleports back into the computer screen!
+const COMPUTER_ANIMATION_NAME := "computer_orc"
+const COMPUTER_ATLAS_PATH := "res://assets/generated/paper_fridge_computer_orc.png"
+const COMPUTER_FRAME_Count := 6
+const COMPUTER_FRAME_SIZE := Vector2i(512, 512)
+const COMPUTER_BEATS := [0.35, 0.45, 0.45, 0.35, 0.35, 0.35]
+const COMPUTER_GUARD_TIME := 1.25
+const COMPUTER_INSERT_END := 2.45
+const COMPUTER_TOTAL_TIME := 2.45
+const COMPUTER_ENDING_TOTAL_TIME := 1.65
+const COMPUTER_XP_PC_PATH := "res://assets/generated/paper_90s_xp_computer.png"
+const COMPUTER_PORTAL_SCREEN_PC_PATH := "res://assets/generated/paper_90s_pc_portal_hollow_frame.png"
+const COMPUTER_VORTEX_DISC_PATH := "res://assets/generated/paper_green_vortex_disc.png"
+const COMPUTER_XP_FRONT_LIP_PATH := "res://assets/generated/paper_90s_xp_computer_front_lip.png"
+const COMPUTER_CD_DISC_PATH := "res://assets/generated/paper_fridge_cd_disc.png"
+const COMPUTER_PORTAL_VORTEX_PATH := "res://assets/generated/paper_wow_dark_portal_anim.png"
+const COMPUTER_PORTAL_VORTEX_FRAMES := 3
+const COMPUTER_PORTAL_VORTEX_FPS := 6.0
+const COMPUTER_MINI_ORC_PATH := "res://assets/generated/paper_cute_mini_green_orc_run.png"
+const COMPUTER_MINI_ORC_FRAMES := 4
+const COMPUTER_MINI_ORC_FPS := 8.5
+const COMPUTER_HEARTHSTONE_PATH := "res://assets/generated/paper_hearthstone_rock_v2.png"
+const COMPUTER_AXE_GLOW_PATH := "res://assets/generated/paper_axe_gold_glow.png"
+const COMPUTER_LOOT_PATHS := [
+	"res://assets/generated/paper_hearthstone_rock_v2.png",
+	"res://assets/generated/paper_wow_loot_sword_v2.png",
+	"res://assets/generated/paper_wow_loot_shield_v2.png",
+	"res://assets/generated/paper_wow_loot_helmet_v2.png",
+	"res://assets/generated/paper_wow_loot_axe_v2.png",
+]
+const COMPUTER_LOOT_MAX_POOL := 6
+const COMPUTER_LOOT_SPAWN_INTERVAL := 1.15
+const COMPUTER_LOOT_SCALE := 0.32
+const COMPUTER_LOOT_GROUND_LIFETIME := 3.0
+const COMPUTER_PC_POS := Vector2(0.0, -142.0)
+const COMPUTER_PC_SCALE := 0.62
+const COMPUTER_CD_SCALE := 0.32
+const COMPUTER_SCREEN_PORTAL_OFFSET := Vector2(-15.0, -50.0)
+const COMPUTER_SCREEN_PORTAL_SCALE := 0.66
+const COMPUTER_DROP_SPAWN_INTERVAL := 0.35
+const COMPUTER_DROP_MAX_POOL := 0
+const COMPUTER_DROP_GRAVITY := 460.0
+const COMPUTER_DROP_SCALE := 0.26
+const COMPUTER_DROP_TYPES := {
+	"hearthstone": "res://assets/generated/paper_hearthstone_rock.png",
+	"computer_portal": "res://assets/generated/paper_hearthstone_rock.png",
+	"orc_axe": "res://assets/generated/paper_hearthstone_rock.png",
+	"orc_armor": "res://assets/generated/paper_hearthstone_rock.png",
+}
+const COMPUTER_PORTAL_TYPES := COMPUTER_DROP_TYPES
+const COMPUTER_WEAPON_TYPES := COMPUTER_DROP_TYPES
+const COMPUTER_BOP := 5.0
+const COMPUTER_SHAKE := 7.0
+
+# 游戏机手柄 (controller) countdown performance:
+# - A 90s Xiaobawang learning console + CRT TV set appears, and the fridge man transforms into a
+#   yellow Super Mario game cartridge (`paper_fridge_mario_cartridge_anim.png`) and plugs into the slot.
+# - While running:
+#   * Keyboard keys on the learning console visibly press down one after another (`controller_key_sprites`).
+#   * Inside the blue-sky TV screen, brick platforms scroll from left to right.
+#   * Only a FEW happy smiley clouds (`CONTROLLER_CLOUD_POOL_SIZE = 2`) slowly drift upward from the TV and fade out.
+# - When the countdown ends (`play_controller_ending` / preview end):
+#   * The cartridge pops up out of the console slot, transforms into a red mushroom (`paper_icon_mushroom.png`),
+#     and vanishes, before returning the Fridge Grandpa to idle!
+const CONTROLLER_ANIMATION_NAME := "controller_plumber"
+const CONTROLLER_ATLAS_PATH := "res://assets/generated/paper_fridge_controller_plumber.png"
+const CONTROLLER_FRAME_SIZE := Vector2i(512, 512)
+const CONTROLLER_BEATS := [0.45, 0.45, 0.6]
+const CONTROLLER_TOTAL_TIME := 1.5
+const CONTROLLER_ENDING_TOTAL_TIME := 1.55
+const CONTROLLER_CONSOLE_TV_PATH := "res://assets/generated/paper_learning_console_tv_off.png"
+const CONTROLLER_CONSOLE_TV_BLUE_SKY_PATH := "res://assets/generated/paper_learning_console_tv_blue_sky.png"
+const CONTROLLER_CONSOLE_FRONT_LIP_PATH := "res://assets/generated/paper_learning_console_front_lip.png"
+const CONTROLLER_CARTRIDGE_PATH := "res://assets/generated/paper_fridge_mario_cartridge_anim.png"
+const CONTROLLER_MUSHROOM_PATH := "res://assets/generated/paper_icon_mushroom.png"
+const CONTROLLER_CARTRIDGE_FRAMES := 4
+const CONTROLLER_CARTRIDGE_FPS := 2.4
+const CONTROLLER_CLOUD_PATH := "res://assets/generated/paper_happy_smiley_cloud.png"
+const CONTROLLER_CLOUD_POOL_SIZE := 3
+const CONTROLLER_CLOUD_SPAWN_INTERVAL := 3.20
+const CONTROLLER_CLOUD_RISE_TIME := 60.0
+const CONTROLLER_BRICK_PATH := "res://assets/generated/paper_brick_platform.png"
+const CONTROLLER_BRICK_POOL_SIZE := 6
+const CONTROLLER_BRICK_SPAWN_INTERVAL := 0.90
+const CONTROLLER_BRICK_TRAVEL_TIME := 2.4
+const CONTROLLER_KEY_COUNT := 6
+const CONTROLLER_CONSOLE_SCALE := 0.62
+const CONTROLLER_CARTRIDGE_SCALE := 0.42
+const CONTROLLER_PROP_TYPES := {
+	"mario_cartridge": "res://assets/generated/paper_fridge_mario_cartridge_anim.png",
+	"controller_cartridge": "res://assets/generated/paper_fridge_mario_cartridge_anim.png",
+	"plumber_mushroom": "res://assets/generated/paper_fridge_mario_cartridge_anim.png",
+}
+
 # Idle ("待机") bits of business the fridge man plays by himself while nothing
 # else is going on (see play_idle_action). Every atlas is generated from the
 # IDLE art itself, so his body, face, colours and proportions are identical to
@@ -295,6 +401,16 @@ const IDLE_ACTIONS := {
 		"frames": 8,
 		"fps": 2.2,
 		"ping_pong": false,
+	},
+	# 喝茶缸: the 90s enamel mug. He takes it out of the fridge door's pocket, raises it and drinks a long sip
+	# with his eyes shut, then lowers it. Three poses, ping-ponged so the sip eases back into the start
+	# instead of snapping.
+	"drink": {
+		"animation": "idle_drink",
+		"atlas": "res://assets/generated/paper_fridge_idle_drink.png",
+		"frames": 3,
+		"fps": 1.7,
+		"ping_pong": true,
 	},
 	# 扔鞋子: the throw that opens 小猫睡觉 - he winds his arm back, swings it past his hip and
 	# follows through. Three poses generated from his own idle frame, so his body, colours and
@@ -482,6 +598,77 @@ var tv_splash_time := 0.0
 var tv_last_pole_frame := -1
 var tv_boat_pop := 0.0
 
+# 复古电脑 (computer) portal + axe state (see play_computer_reaction): swappable portal + axe.
+var computer_reaction_active := false
+var computer_reaction_timer := 0.0
+var computer_hold_active := false
+var computer_hold_time := 0.0
+var computer_preview_timer := 0.0
+var computer_ending_active := false
+var computer_ending_timer := 0.0
+var computer_waiting_for_axe_click := false
+var computer_waiting_clock := 0.0
+var computer_axe_picked := false
+var computer_vortex_clock := 0.0
+var computer_portal_id := "hearthstone"
+var computer_weapon_id := "hearthstone"
+var computer_right_portal_sprite: Sprite2D
+var computer_left_portal_sprite: Sprite2D
+var computer_pc_sprite: Sprite2D
+var computer_pc_tex_normal: Texture2D
+var computer_pc_tex_open: Texture2D
+var computer_pc_tex_windup: Texture2D
+var computer_pc_tex_chew: Texture2D
+var computer_pc_tex_swollen_hit: Texture2D
+var computer_pc_tex_swollen_punch: Texture2D
+var computer_attack_prop_sprite: Sprite2D
+var computer_mouse_tex: Texture2D
+var computer_keyboard_tex: Texture2D
+var computer_stormwind_sprite: Sprite2D
+var computer_rj45_sprite: Sprite2D
+var computer_bulge_poly: Polygon2D
+var computer_stone_sprite: Sprite2D
+var computer_axe_glow_sprite: Sprite2D
+var computer_right_weapon_sprite: Sprite2D
+var computer_drop_sprites: Array[Sprite2D] = []
+var computer_drop_states: Array[Dictionary] = []
+var computer_loot_sprites: Array[Sprite2D] = []
+var computer_loot_states: Array[Dictionary] = []
+var computer_loot_textures: Array[Texture2D] = []
+var computer_loot_spawn_clock := 0.0
+var computer_loot_next_idx := 0
+var computer_dragged_loot_idx := -1
+var computer_dragged_loot_offset := Vector2.ZERO
+var computer_drop_spawn_clock := 0.0
+var computer_drop_next_idx := 0
+var computer_in_cable := false
+var computer_flung_out := false
+var computer_fling_clock := 0.0
+
+# 游戏机手柄 (controller) Xiaobawang console + cartridge state (see play_controller_reaction).
+var controller_reaction_active := false
+var controller_reaction_timer := 0.0
+var controller_hold_active := false
+var controller_hold_time := 0.0
+var controller_preview_timer := 0.0
+var controller_ending_active := false
+var controller_ending_timer := 0.0
+var controller_prop_id := "mario_cartridge"
+var controller_platform_sprite: Sprite2D
+var controller_platform_sky_sprite: Sprite2D
+var controller_front_lip_sprite: Sprite2D
+var controller_prop_sprite: Sprite2D
+var controller_mushroom_sprite: Sprite2D
+var controller_key_sprites: Array[Polygon2D] = []
+var controller_cloud_sprites: Array[Sprite2D] = []
+var controller_cloud_states: Array[Dictionary] = []
+var controller_cloud_spawn_clock := 0.0
+var controller_cloud_next_idx := 0
+var controller_brick_sprites: Array[Sprite2D] = []
+var controller_brick_states: Array[Dictionary] = []
+var controller_brick_spawn_clock := 0.0
+var controller_brick_next_idx := 0
+
 # Idle action state (see play_idle_action): "" while he is not doing a bit of
 # idle business.
 var idle_action_id := ""
@@ -524,6 +711,10 @@ func _process(delta: float) -> void:
 		_update_cassette_reaction(delta)
 	elif tv_reaction_active or tv_hold_active:
 		_update_tv_reaction(delta)
+	elif computer_reaction_active or computer_hold_active or computer_ending_active:
+		_update_computer_reaction(delta)
+	elif controller_reaction_active or controller_hold_active or controller_ending_active:
+		_update_controller_reaction(delta)
 	elif screen_toss_active:
 		_update_screen_toss(delta)
 	elif ball_drop_active:
@@ -564,8 +755,13 @@ func _process(delta: float) -> void:
 		# parks _process) saw the scaled version. That is why shaving the const twice still
 		# looked oversized, and why he towered over the boat's passengers.
 		var scale_multiplier: float = TV_PERFORMANCE_SCALE if (tv_reaction_active or tv_hold_active) else 1.0
+		if computer_reaction_active or computer_hold_active:
+			scale_multiplier *= _get_computer_scale_multiplier()
+		if controller_reaction_active or controller_hold_active:
+			scale_multiplier *= _get_controller_scale_multiplier()
 		var base_scale: float = display_height / float(frame_size.y) * scale_multiplier
 		animated_sprite.scale = Vector2(base_scale, base_scale)
+		animated_sprite.rotation = _get_computer_rotation() if (computer_reaction_active or computer_hold_active) else 0.0
 		var offset := Vector2.ZERO
 		if resting:
 			offset.y = sin(item_elapsed * 3.0) * 2.0
@@ -575,21 +771,41 @@ func _process(delta: float) -> void:
 			offset += _get_cassette_offset()
 		if tv_reaction_active or tv_hold_active:
 			offset += _get_tv_offset()
+		if computer_reaction_active or computer_hold_active:
+			offset += _get_computer_offset()
+		if controller_reaction_active or controller_hold_active:
+			offset += _get_controller_offset()
 		if ball_drop_active:
 			offset += _get_ball_drop_shake()
 		animated_sprite.position = SPRITE_BASE_POSITION + offset + doze_body_offset + Vector2(0.0, sprite_scale_drop)
+		if computer_reaction_active or computer_hold_active or computer_ending_active:
+			_update_computer_gear_transforms()
 	if art_hidden and animated_sprite != null and is_instance_valid(animated_sprite):
 		# ⚠ LAST WORD on visibility, deliberately: one of the act teardowns above may have set
 		# `animated_sprite.visible = true` (that was the boxed man blinking), and running this at the end of his
 		# own _process also puts it after the LEVEL's per-frame work.
 		animated_sprite.visible = false
+	elif (controller_reaction_active or controller_hold_active or controller_ending_active) and animated_sprite != null and is_instance_valid(animated_sprite):
+		var c_elapsed: float = CONTROLLER_TOTAL_TIME if (controller_hold_active or controller_ending_active) else CONTROLLER_TOTAL_TIME - controller_reaction_timer
+		animated_sprite.visible = c_elapsed < CONTROLLER_BEATS[0]
+	elif (computer_reaction_active or computer_hold_active or computer_ending_active) and animated_sprite != null and is_instance_valid(animated_sprite):
+		animated_sprite.visible = not computer_in_cable
+	if computer_reaction_active or computer_hold_active or computer_ending_active:
+		_update_computer_gear_transforms()
+	if controller_reaction_active or controller_hold_active or controller_ending_active:
+		_update_controller_platform_and_prop(delta)
 	queue_redraw()
 
 
 ## 变成盒子: switch his own art off (or back on) while the box disguise owns the visual.
 func set_art_hidden(value: bool) -> void:
 	art_hidden = value
-	if not value and animated_sprite != null and is_instance_valid(animated_sprite):
+	if value:
+		stop_idle_action()
+		if doze != null and is_instance_valid(doze):
+			doze.set_enabled(false)
+		doze_body_offset = Vector2.ZERO
+	elif animated_sprite != null and is_instance_valid(animated_sprite):
 		animated_sprite.visible = true
 
 
@@ -687,6 +903,9 @@ func stop_idle_action() -> void:
 		return
 	idle_action_id = ""
 	idle_action_timer = 0.0
+	if doze != null and is_instance_valid(doze):
+		doze.set_enabled(false)
+	doze_body_offset = Vector2.ZERO
 	_play_current_animation()
 
 
@@ -742,6 +961,30 @@ func stop_performances() -> void:
 		tv_splash_sprite.visible = false
 	tv_splash_time = 0.0
 	tv_last_pole_frame = -1
+	computer_reaction_active = false
+	computer_reaction_timer = 0.0
+	computer_hold_active = false
+	computer_hold_time = 0.0
+	computer_preview_timer = 0.0
+	computer_ending_active = false
+	computer_ending_timer = 0.0
+	computer_waiting_for_axe_click = false
+	computer_axe_picked = false
+	computer_in_cable = false
+	computer_flung_out = false
+	computer_fling_clock = 0.0
+	_hide_computer_gear()
+	controller_reaction_active = false
+	controller_reaction_timer = 0.0
+	controller_hold_active = false
+	controller_hold_time = 0.0
+	controller_preview_timer = 0.0
+	controller_ending_active = false
+	controller_ending_timer = 0.0
+	_hide_controller_props()
+	if animated_sprite != null and is_instance_valid(animated_sprite):
+		animated_sprite.rotation = 0.0
+		animated_sprite.visible = not art_hidden
 	idle_action_id = ""
 	idle_action_timer = 0.0
 	_update_juggle_state()
@@ -1062,6 +1305,8 @@ func play_pager_reaction() -> void:
 	# 立即播放: the reaction replaces whatever he was doing, an idle bit of business
 	# included (see play_juggle_preview).
 	stop_idle_action()
+	stop_computer_reaction()
+	stop_controller_reaction()
 	pager_preview_timer = 0.0
 	pager_hold_active = false
 	pager_hold_time = 0.0
@@ -1249,6 +1494,9 @@ func play_cassette_reaction() -> void:
 	# and any idle bit of business included.
 	stop_idle_action()
 	stop_pager_reaction()
+	stop_tv_reaction()
+	stop_computer_reaction()
+	stop_controller_reaction()
 	cassette_preview_timer = 0.0
 	cassette_hold_active = false
 	cassette_hold_time = 0.0
@@ -1347,7 +1595,9 @@ func _ensure_cassette_note_texture() -> void:
 ## a 改变飞行方向 click apart from the idle click that toggles the room's props.
 func is_performing() -> bool:
 	return pager_reaction_active or pager_hold_active or cassette_reaction_active \
-		or cassette_hold_active or tv_reaction_active or tv_hold_active or ball_drop_active
+		or cassette_hold_active or tv_reaction_active or tv_hold_active \
+		or computer_reaction_active or computer_hold_active \
+		or controller_reaction_active or controller_hold_active or ball_drop_active
 
 
 ## Where the 音乐符号 are born, in the player's own space: a point on the boombox's
@@ -1449,6 +1699,8 @@ func play_tv_reaction() -> void:
 	stop_idle_action()
 	stop_pager_reaction()
 	stop_cassette_reaction()
+	stop_computer_reaction()
+	stop_controller_reaction()
 	tv_preview_timer = 0.0
 	tv_hold_active = false
 	tv_hold_time = 0.0
@@ -1720,12 +1972,1225 @@ func _update_tv_boat(delta: float) -> void:
 	tv_boat_sprite.rotation = sin(elapsed * TV_BOAT_BOB_SPEED * 0.7) * TV_BOAT_TILT
 
 
+## 复古电脑 (computer) countdown performance: a portal (`set_computer_portal`) opens on the fridge
+## man's RIGHT, sucks him in, then he emerges from a portal on the LEFT and picks up an axe
+## (`set_computer_weapon`) from the ground, swinging it for the rest of the countdown.
+func play_computer_preview(duration: float) -> void:
+	if duration <= 0.0:
+		return
+	play_computer_reaction()
+	computer_preview_timer = duration
+
+
+func play_computer_reaction() -> void:
+	stop_idle_action()
+	stop_pager_reaction()
+	stop_cassette_reaction()
+	stop_tv_reaction()
+	stop_controller_reaction()
+	computer_preview_timer = 0.0
+	computer_hold_active = false
+	computer_hold_time = 0.0
+	computer_ending_active = false
+	computer_ending_timer = 0.0
+	computer_waiting_for_axe_click = false
+	computer_waiting_clock = 0.0
+	computer_axe_picked = false
+	computer_in_cable = false
+	computer_flung_out = false
+	computer_fling_clock = 0.0
+	computer_vortex_clock = 0.0
+	juggle_preview_timer = 0.0
+	rest_preview_timer = 0.0
+	ball_drop_active = false
+	ball_drop_timer = 0.0
+	if ball_drop_sprite != null and is_instance_valid(ball_drop_sprite):
+		ball_drop_sprite.visible = false
+	_update_juggle_state()
+	_update_rest_state()
+	if animated_sprite == null or not is_instance_valid(animated_sprite):
+		return
+	if not animated_sprite.sprite_frames.has_animation(COMPUTER_ANIMATION_NAME):
+		return
+	_ensure_computer_gear_sprites()
+	computer_reaction_active = true
+	computer_reaction_timer = COMPUTER_TOTAL_TIME
+	_set_sprite_scale_for(COMPUTER_FRAME_SIZE)
+	animated_sprite.animation = COMPUTER_ANIMATION_NAME
+	animated_sprite.frame = 0
+	animated_sprite.rotation = 0.0
+	animated_sprite.z_index = 15
+	animated_sprite.visible = not art_hidden
+	animated_sprite.stop()
+	_update_computer_gear_transforms()
+
+
+## 4. 倒计时结束那个兽人会通过传送石回到电脑里: starts the Hearthstone return ending sequence!
+func play_computer_ending() -> void:
+	if not computer_reaction_active and not computer_hold_active and not computer_ending_active:
+		_ensure_computer_gear_sprites()
+	computer_reaction_active = false
+	computer_reaction_timer = 0.0
+	computer_hold_active = false
+	computer_preview_timer = 0.0
+	computer_ending_active = true
+	computer_ending_timer = 0.0
+	computer_in_cable = true
+
+
+func stop_computer_reaction() -> void:
+	if not computer_reaction_active and not computer_hold_active and not computer_ending_active:
+		return
+	computer_reaction_active = false
+	computer_reaction_timer = 0.0
+	computer_hold_active = false
+	computer_hold_time = 0.0
+	computer_preview_timer = 0.0
+	computer_ending_active = false
+	computer_ending_timer = 0.0
+	computer_waiting_for_axe_click = false
+	computer_axe_picked = false
+	computer_in_cable = false
+	computer_flung_out = false
+	computer_fling_clock = 0.0
+	if animated_sprite != null and is_instance_valid(animated_sprite):
+		animated_sprite.rotation = 0.0
+		animated_sprite.z_index = 0
+		animated_sprite.visible = not art_hidden
+	_hide_computer_gear()
+	_play_current_animation()
+	queue_redraw()
+
+
+func is_computer_orc() -> bool:
+	return computer_reaction_active or computer_hold_active or computer_ending_active
+
+
+## True while the fridge man has emerged from the left portal and is standing on the ground waiting
+## for the player to click the stone axe to transform into an Orc Warrior.
+func is_waiting_for_computer_axe_click() -> bool:
+	return false
+
+
+## Checks if `global_point` clicks the stone or the axe embedded in it while waiting, or triggers
+## the axe pickup directly when called. Returns true if the click was consumed and triggered the Orc transform!
+func try_click_computer_stone_axe(_global_point: Vector2) -> bool:
+	return false
+
+
+func pick_up_computer_stone_axe() -> void:
+	computer_axe_picked = true
+	computer_waiting_for_axe_click = false
+	computer_in_cable = false
+	computer_flung_out = true
+	computer_fling_clock = 0.0
+
+
+## Disabled for the XP computer + CD + portal performance so the computer stays anchored in place.
+func is_computer_spinning() -> bool:
+	return false
+
+
+## Swaps the prop / portal used during the 复古电脑 performance.
+func set_computer_drop_item(drop_id: String) -> void:
+	if not COMPUTER_DROP_TYPES.has(drop_id):
+		return
+	computer_portal_id = drop_id
+	computer_weapon_id = drop_id
+
+
+func set_computer_portal(portal_id: String) -> void:
+	set_computer_drop_item(portal_id)
+
+
+func set_computer_armor(armor_id: String) -> void:
+	set_computer_drop_item(armor_id)
+
+
+func set_computer_weapon(weapon_id: String) -> void:
+	set_computer_drop_item(weapon_id)
+
+
+func _ensure_computer_gear_sprites() -> void:
+	if computer_pc_tex_normal == null:
+		computer_pc_tex_normal = _load_texture(COMPUTER_XP_PC_PATH)
+	if computer_pc_tex_open == null:
+		computer_pc_tex_open = _load_texture(COMPUTER_PORTAL_SCREEN_PC_PATH)
+
+	# 1. Single CRT computer sprite (`ComputerPcSprite`): starts with XP Bliss screen (`computer_pc_tex_normal`),
+	#    then switches its own texture to the hollow Dark Portal screen (`computer_pc_tex_open`) once the CD is
+	#    inserted — and sits AT `z_index = 12` IN FRONT of the spinning vortex (`z_index = 11`)!
+	if computer_pc_sprite == null or not is_instance_valid(computer_pc_sprite):
+		computer_pc_sprite = Sprite2D.new()
+		computer_pc_sprite.name = "ComputerPcSprite"
+		computer_pc_sprite.texture = computer_pc_tex_normal
+		computer_pc_sprite.z_index = 12
+		computer_pc_sprite.visible = false
+		add_child(computer_pc_sprite)
+	else:
+		computer_pc_sprite.texture = computer_pc_tex_normal
+		computer_pc_sprite.z_index = 12
+
+	# 1. 电脑动画里那个旋转的漩涡图层应该在那个门的后面才对: `computer_right_portal_sprite` (`z_index = 11`)
+	#    sits BEHIND `ComputerPcSprite` (`z_index = 12`, whose Dark Portal doorway interior is hollow), so the
+	#    stone pillars, top dragon arch, and bottom steps cleanly frame the spinning green vortex from in front!
+	if computer_right_portal_sprite == null or not is_instance_valid(computer_right_portal_sprite):
+		computer_right_portal_sprite = Sprite2D.new()
+		computer_right_portal_sprite.name = "ComputerRightPortalSprite"
+		computer_right_portal_sprite.z_index = 11
+		computer_right_portal_sprite.visible = false
+		add_child(computer_right_portal_sprite)
+	computer_right_portal_sprite.z_index = 11
+	var vortex_disc_tex := _load_texture(COMPUTER_VORTEX_DISC_PATH)
+	if vortex_disc_tex != null:
+		computer_right_portal_sprite.texture = vortex_disc_tex
+		computer_right_portal_sprite.hframes = 1
+		computer_right_portal_sprite.vframes = 1
+		computer_right_portal_sprite.frame = 0
+
+	# `computer_attack_prop_sprite` is the Fridge Grandpa CD-ROM disc (`paper_fridge_cd_disc.png`, `z_index = 13`)
+	if computer_attack_prop_sprite == null or not is_instance_valid(computer_attack_prop_sprite):
+		computer_attack_prop_sprite = Sprite2D.new()
+		computer_attack_prop_sprite.name = "ComputerCdDiscSprite"
+		computer_attack_prop_sprite.z_index = 13
+		computer_attack_prop_sprite.visible = false
+		add_child(computer_attack_prop_sprite)
+	computer_attack_prop_sprite.texture = _load_texture(COMPUTER_CD_DISC_PATH)
+	computer_attack_prop_sprite.z_index = 13
+
+	# `computer_left_portal_sprite` is the front lip of the XP PC CD-ROM drive & keyboard (`z_index = 14`)
+	# so the bottom half of the inserted CD disc is hidden inside the drive slot!
+	if computer_left_portal_sprite == null or not is_instance_valid(computer_left_portal_sprite):
+		computer_left_portal_sprite = Sprite2D.new()
+		computer_left_portal_sprite.name = "ComputerXpFrontLipSprite"
+		computer_left_portal_sprite.z_index = 14
+		computer_left_portal_sprite.visible = false
+		add_child(computer_left_portal_sprite)
+	computer_left_portal_sprite.texture = _load_texture(COMPUTER_XP_FRONT_LIP_PATH)
+	computer_left_portal_sprite.hframes = 1
+	computer_left_portal_sprite.vframes = 1
+	computer_left_portal_sprite.z_index = 14
+
+	var orc_tex := _load_texture(COMPUTER_MINI_ORC_PATH)
+	var orc_is_sheet: bool = orc_tex != null and orc_tex.get_width() >= 256 * COMPUTER_MINI_ORC_FRAMES
+	while computer_drop_sprites.size() < COMPUTER_DROP_MAX_POOL:
+		var ds := Sprite2D.new()
+		ds.name = "ComputerMiniOrc%d" % computer_drop_sprites.size()
+		ds.texture = orc_tex
+		ds.z_index = 15
+		ds.visible = false
+		add_child(ds)
+		computer_drop_sprites.append(ds)
+		computer_drop_states.append({"active": false})
+	for ds: Sprite2D in computer_drop_sprites:
+		if ds != null and is_instance_valid(ds) and orc_tex != null:
+			ds.texture = orc_tex
+			ds.hframes = COMPUTER_MINI_ORC_FRAMES if orc_is_sheet else 1
+			ds.vframes = 1
+			ds.frame = 0
+			ds.z_index = 15
+
+	# `computer_stone_sprite` is the Hearthstone (`传送石` / `炉石`) that the Orc uses to teleport back
+	# into the computer at the end of the countdown (`play_computer_ending`)!
+	var hs_tex := _load_texture(str(COMPUTER_DROP_TYPES.get(computer_portal_id, COMPUTER_HEARTHSTONE_PATH)))
+	if computer_stone_sprite == null or not is_instance_valid(computer_stone_sprite):
+		computer_stone_sprite = Sprite2D.new()
+		computer_stone_sprite.name = "ComputerHearthstoneSprite"
+		computer_stone_sprite.z_index = 16
+		computer_stone_sprite.visible = false
+		add_child(computer_stone_sprite)
+	if hs_tex != null:
+		computer_stone_sprite.texture = hs_tex
+		computer_stone_sprite.z_index = 16
+
+	if computer_axe_glow_sprite == null or not is_instance_valid(computer_axe_glow_sprite):
+		computer_axe_glow_sprite = Sprite2D.new()
+		computer_axe_glow_sprite.name = "ComputerHearthstoneGlowSprite"
+		computer_axe_glow_sprite.texture = _load_texture(COMPUTER_AXE_GLOW_PATH)
+		computer_axe_glow_sprite.z_index = 16
+		var add_mat := CanvasItemMaterial.new()
+		add_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		computer_axe_glow_sprite.material = add_mat
+		computer_axe_glow_sprite.visible = false
+		add_child(computer_axe_glow_sprite)
+
+	# 2. 传送门中飞出各种装备还有炉石的石头，每隔一会就飞出一个物品掉在地上直到倒计时结束:
+	if computer_loot_textures.is_empty():
+		for lp: String in COMPUTER_LOOT_PATHS:
+			var ltex := _load_texture(lp)
+			if ltex != null:
+				computer_loot_textures.append(ltex)
+	while computer_loot_sprites.size() < COMPUTER_LOOT_MAX_POOL:
+		var ls := Sprite2D.new()
+		ls.name = "ComputerPortalLoot%d" % computer_loot_sprites.size()
+		ls.z_index = 15
+		ls.visible = false
+		add_child(ls)
+		computer_loot_sprites.append(ls)
+		computer_loot_states.append({"active": false})
+
+
+func _hide_computer_gear() -> void:
+	if computer_bulge_poly != null and is_instance_valid(computer_bulge_poly):
+		computer_bulge_poly.visible = false
+	for ds: Sprite2D in computer_drop_sprites:
+		if ds != null and is_instance_valid(ds):
+			ds.visible = false
+	for i in range(computer_drop_states.size()):
+		computer_drop_states[i]["active"] = false
+	for ls: Sprite2D in computer_loot_sprites:
+		if ls != null and is_instance_valid(ls):
+			ls.visible = false
+	for i in range(computer_loot_states.size()):
+		computer_loot_states[i]["active"] = false
+	computer_loot_spawn_clock = 0.0
+	computer_loot_next_idx = 0
+	computer_dragged_loot_idx = -1
+	computer_dragged_loot_offset = Vector2.ZERO
+	computer_drop_spawn_clock = 0.0
+	computer_drop_next_idx = 0
+	for s: Sprite2D in [
+		computer_pc_sprite,
+		computer_attack_prop_sprite,
+		computer_stormwind_sprite,
+		computer_rj45_sprite,
+		computer_right_portal_sprite,
+		computer_left_portal_sprite,
+		computer_stone_sprite,
+		computer_axe_glow_sprite,
+		computer_right_weapon_sprite,
+	]:
+		if s != null and is_instance_valid(s):
+			s.visible = false
+
+
+func _spawn_computer_mini_orc() -> void:
+	if computer_drop_sprites.is_empty():
+		return
+	# 3. 从传送门最多跳出一个兽人，在电脑周围跑: only spawn if the single Orc slot is not already active!
+	if bool(computer_drop_states[0].get("active", false)):
+		return
+	var ds: Sprite2D = computer_drop_sprites[0]
+	if ds == null or not is_instance_valid(ds):
+		return
+	var portal_pos: Vector2 = COMPUTER_PC_POS + COMPUTER_SCREEN_PORTAL_OFFSET
+	var start_pos: Vector2 = portal_pos
+	var ground_y := 6.0
+	ds.position = start_pos
+	ds.scale = Vector2(COMPUTER_DROP_SCALE, COMPUTER_DROP_SCALE)
+	ds.rotation = 0.0
+	ds.modulate = Color.WHITE
+	ds.visible = true
+	computer_drop_states[0] = {
+		"active": true,
+		"pos": start_pos,
+		"vel": Vector2(-115.0, -210.0),
+		"ground_y": ground_y,
+		"run_dir": 1.0,
+		"bounces": 0,
+		"landed": false,
+		"age": 0.0,
+		"return_start_pos": Vector2.ZERO,
+	}
+
+
+func _spawn_computer_portal_loot() -> void:
+	if computer_loot_sprites.is_empty() or computer_loot_textures.is_empty():
+		return
+	var idx: int = computer_loot_next_idx % COMPUTER_LOOT_MAX_POOL
+	var tex: Texture2D = computer_loot_textures[computer_loot_next_idx % computer_loot_textures.size()]
+	computer_loot_next_idx += 1
+	var ls: Sprite2D = computer_loot_sprites[idx]
+	if ls == null or not is_instance_valid(ls):
+		return
+	ls.texture = tex
+	var portal_pos: Vector2 = COMPUTER_PC_POS + COMPUTER_SCREEN_PORTAL_OFFSET
+	var start_pos: Vector2 = portal_pos + Vector2(randf_range(-8.0, 8.0), randf_range(-6.0, 6.0))
+	# 2. 掉落在地上的物品堆在电脑前面就行: land right in front of the computer keyboard (`x = -58 .. +58`, `y = 6 .. 22`)!
+	var target_x: float = randf_range(-56.0, 56.0)
+	var ground_y: float = randf_range(6.0, 22.0)
+	var vx: float = (target_x - start_pos.x) * 1.15
+	var vy: float = randf_range(-195.0, -145.0)
+	# Normalize scale by texture size (Hearthstone is 512x512, equipment icons are 256x256)
+	var base_sc: float = COMPUTER_LOOT_SCALE * (256.0 / maxf(float(tex.get_width()), 256.0))
+	ls.position = start_pos
+	ls.scale = Vector2(base_sc * 0.35, base_sc * 0.35)
+	ls.rotation = randf_range(-0.4, 0.4)
+	ls.modulate = Color.WHITE
+	ls.visible = true
+	computer_loot_states[idx] = {
+		"active": true,
+		"pos": start_pos,
+		"vel": Vector2(vx, vy),
+		"ground_y": ground_y,
+		"base_sc": base_sc,
+		"rot_speed": randf_range(-5.5, 5.5),
+		"bounces": 0,
+		"landed": false,
+		"landed_time": 0.0,
+		"held": false,
+		"released": false,
+		"age": 0.0,
+	}
+
+
+## True while the player is holding a picked-up computer loot item with the left mouse button!
+func is_dragging_computer_loot() -> bool:
+	return computer_dragged_loot_idx >= 0 and computer_dragged_loot_idx < computer_loot_states.size() \
+		and bool(computer_loot_states[computer_dragged_loot_idx].get("active", false)) \
+		and bool(computer_loot_states[computer_dragged_loot_idx].get("held", false))
+
+
+## 1. 掉到地面的武器和物品3秒内可以通过鼠标点击拾取: checks if `global_point` hits any active loot item
+## and picks it up so it follows the mouse until the left mouse button is released!
+func try_press_computer_loot(global_point: Vector2) -> bool:
+	if not (computer_reaction_active or computer_hold_active or computer_ending_active):
+		return false
+	var local_pt: Vector2 = to_local(global_point)
+	for i in range(computer_loot_sprites.size() - 1, -1, -1):
+		var ls: Sprite2D = computer_loot_sprites[i]
+		if ls == null or not is_instance_valid(ls) or not ls.visible:
+			continue
+		var st: Dictionary = computer_loot_states[i]
+		if not bool(st.get("active", false)):
+			continue
+		var hit_radius := 54.0
+		if local_pt.distance_to(ls.position) <= hit_radius:
+			computer_dragged_loot_idx = i
+			computer_dragged_loot_offset = ls.position - local_pt
+			st["held"] = true
+			st["landed"] = false
+			st["released"] = false
+			st["vel"] = Vector2.ZERO
+			st["pos"] = ls.position
+			ls.z_index = 18
+			return true
+	return false
+
+
+func drag_computer_loot(global_point: Vector2) -> bool:
+	if not is_dragging_computer_loot():
+		return false
+	var idx: int = computer_dragged_loot_idx
+	var ls: Sprite2D = computer_loot_sprites[idx]
+	var st: Dictionary = computer_loot_states[idx]
+	var target_pos: Vector2 = to_local(global_point) + computer_dragged_loot_offset
+	st["pos"] = target_pos
+	if ls != null and is_instance_valid(ls):
+		ls.position = target_pos
+		ls.rotation = 0.0
+	return true
+
+
+## 鼠标左键松开，物品掉到地面就消失了: releases the held loot item so gravity pulls it down to the ground,
+## and the moment it touches the ground (`released == true`) it vanishes!
+func release_computer_loot() -> bool:
+	if not is_dragging_computer_loot():
+		computer_dragged_loot_idx = -1
+		return false
+	var idx: int = computer_dragged_loot_idx
+	computer_dragged_loot_idx = -1
+	var st: Dictionary = computer_loot_states[idx]
+	st["held"] = false
+	st["landed"] = false
+	st["released"] = true
+	var pos: Vector2 = st["pos"]
+	var ground_y: float = maxf(float(st.get("ground_y", 14.0)), pos.y + 4.0) if pos.y < 18.0 else pos.y
+	st["ground_y"] = clampf(ground_y, 6.0, 24.0)
+	st["vel"] = Vector2(0.0, 45.0)
+	st["rot_speed"] = randf_range(-4.5, 4.5)
+	if pos.y >= float(st["ground_y"]):
+		# Already at or below the ground when released -> disappear immediately!
+		st["active"] = false
+		var ls: Sprite2D = computer_loot_sprites[idx]
+		if ls != null and is_instance_valid(ls):
+			ls.visible = false
+	return true
+
+
+func _update_computer_portal_loot(delta: float, portal_open: bool) -> void:
+	if portal_open and not computer_ending_active:
+		computer_loot_spawn_clock += delta
+		if computer_loot_spawn_clock >= COMPUTER_LOOT_SPAWN_INTERVAL:
+			computer_loot_spawn_clock -= COMPUTER_LOOT_SPAWN_INTERVAL
+			_spawn_computer_portal_loot()
+	for i in range(computer_loot_sprites.size()):
+		var ls: Sprite2D = computer_loot_sprites[i]
+		if ls == null or not is_instance_valid(ls):
+			continue
+		var st: Dictionary = computer_loot_states[i]
+		if not bool(st.get("active", false)):
+			ls.visible = false
+			continue
+		ls.visible = true
+		var age: float = float(st.get("age", 0.0)) + delta
+		st["age"] = age
+		var base_sc: float = float(st.get("base_sc", COMPUTER_LOOT_SCALE))
+		var pop: float = clampf(age / 0.18, 0.0, 1.0)
+		var sc: float = base_sc * (0.35 + 0.65 * pop)
+		if bool(st.get("held", false)):
+			# Picked up by the mouse: slightly enlarged, fully opaque, follows the cursor!
+			ls.scale = Vector2(base_sc * 1.12, base_sc * 1.12)
+			ls.modulate = Color.WHITE
+			ls.position = st["pos"]
+			continue
+		var alpha := 1.0
+		if computer_ending_active and computer_ending_timer > 1.25:
+			alpha = minf(alpha, clampf(1.0 - (computer_ending_timer - 1.25) / 0.35, 0.0, 1.0))
+		if bool(st.get("landed", false)):
+			# 超过三秒不拾取也会自动消失: count up `landed_time` once on the ground and vanish at 3.0s!
+			var landed_t: float = float(st.get("landed_time", 0.0)) + delta
+			st["landed_time"] = landed_t
+			if landed_t >= COMPUTER_LOOT_GROUND_LIFETIME:
+				st["active"] = false
+				ls.visible = false
+				continue
+			if landed_t > COMPUTER_LOOT_GROUND_LIFETIME - 0.45:
+				alpha = minf(alpha, clampf((COMPUTER_LOOT_GROUND_LIFETIME - landed_t) / 0.45, 0.0, 1.0))
+		ls.modulate = Color(1.0, 1.0, 1.0, alpha)
+		ls.scale = Vector2(sc, sc)
+		if not bool(st.get("landed", false)):
+			var pos: Vector2 = st["pos"]
+			var vel: Vector2 = st["vel"]
+			var ground_y: float = float(st["ground_y"])
+			vel.y += COMPUTER_DROP_GRAVITY * delta
+			pos += vel * delta
+			ls.rotation += float(st["rot_speed"]) * delta
+			if pos.y >= ground_y and vel.y > 0.0:
+				pos.y = ground_y
+				if bool(st.get("released", false)):
+					# 鼠标左键松开，物品掉到地面就消失了: disappears the instant it hits the ground!
+					st["active"] = false
+					ls.visible = false
+					continue
+				var bounces: int = int(st.get("bounces", 0)) + 1
+				st["bounces"] = bounces
+				if bounces < 2 and absf(vel.y) > 65.0:
+					vel.y = -vel.y * 0.42
+					vel.x *= 0.55
+				else:
+					vel = Vector2.ZERO
+					st["landed"] = true
+					st["landed_time"] = 0.0
+			st["pos"] = pos
+			st["vel"] = vel
+			ls.position = pos
+
+
+func _update_computer_drops(delta: float, portal_open: bool) -> void:
+	# 3. 跑步的兽人删掉: only update the flying equipment + Hearthstone loot (`_update_computer_portal_loot`),
+	#    and keep any legacy orc/stone sprites hidden!
+	_update_computer_portal_loot(delta, portal_open)
+	for ds: Sprite2D in computer_drop_sprites:
+		if ds != null and is_instance_valid(ds):
+			ds.visible = false
+	if computer_stone_sprite != null and is_instance_valid(computer_stone_sprite):
+		computer_stone_sprite.visible = false
+	if computer_axe_glow_sprite != null and is_instance_valid(computer_axe_glow_sprite):
+		computer_axe_glow_sprite.visible = false
+
+
+func _get_computer_scale_multiplier() -> float:
+	var elapsed: float = COMPUTER_TOTAL_TIME + computer_hold_time if computer_hold_active else COMPUTER_TOTAL_TIME - computer_reaction_timer
+	if elapsed < 0.35:
+		return 1.0
+	if elapsed < COMPUTER_GUARD_TIME:
+		var t: float = clampf((elapsed - 0.35) / (COMPUTER_GUARD_TIME - 0.35), 0.0, 1.0)
+		return lerpf(0.95, 0.56, t * t)
+	return 0.50
+
+
+func _get_computer_rotation() -> float:
+	var elapsed: float = COMPUTER_TOTAL_TIME + computer_hold_time if computer_hold_active else COMPUTER_TOTAL_TIME - computer_reaction_timer
+	if elapsed >= 0.35 and elapsed < COMPUTER_GUARD_TIME:
+		var t: float = clampf((elapsed - 0.35) / (COMPUTER_GUARD_TIME - 0.35), 0.0, 1.0)
+		return sin(t * PI * 3.0) * 0.12
+	return 0.0
+
+
+func _get_computer_offset() -> Vector2:
+	var elapsed: float = COMPUTER_TOTAL_TIME + computer_hold_time if computer_hold_active else COMPUTER_TOTAL_TIME - computer_reaction_timer
+	if elapsed < 0.35:
+		return Vector2(sin(elapsed * 36.0), cos(elapsed * 32.0)) * 4.5
+	if elapsed < COMPUTER_GUARD_TIME:
+		var t: float = clampf((elapsed - 0.35) / (COMPUTER_GUARD_TIME - 0.35), 0.0, 1.0)
+		var hop: float = -sin(t * PI) * 44.0
+		return Vector2(sin(elapsed * 52.0) * 5.0, lerpf(0.0, 88.0, t) + hop)
+	return Vector2.ZERO
+
+
+func _update_computer_reaction(delta: float) -> void:
+	computer_vortex_clock += delta
+	if computer_ending_active:
+		computer_ending_timer += delta
+		computer_in_cable = true
+		_update_computer_drops(delta, true)
+		if computer_ending_timer >= COMPUTER_ENDING_TOTAL_TIME:
+			stop_computer_reaction()
+			performance_finished.emit()
+		return
+	if computer_preview_timer > 0.0:
+		computer_preview_timer = maxf(computer_preview_timer - delta, 0.0)
+		if computer_preview_timer <= 0.0:
+			play_computer_ending()
+			return
+	if computer_hold_active:
+		computer_hold_time += delta
+	else:
+		computer_reaction_timer -= delta
+		if computer_reaction_timer <= 0.0:
+			computer_reaction_timer = 0.0
+			computer_reaction_active = false
+			computer_hold_active = true
+			computer_hold_time = 0.0
+			performance_finished.emit()
+
+	var elapsed: float = COMPUTER_TOTAL_TIME + computer_hold_time if computer_hold_active else COMPUTER_TOTAL_TIME - computer_reaction_timer
+	# 2. 冰箱爷爷变身成光盘的过程要有个过渡动画:
+	#    - `0.00 .. 0.35s`: Frame 0 (standing in front of the XP PC)
+	#    - `0.35 .. 0.80s`: Frame 1 (`paper_fridge_cd_morph_step1.png`: curling knees & arms inward with poof puffs)
+	#    - `0.80 .. 1.25s`: Frame 2 (`paper_fridge_cd_morph_step2.png`: half-fridge half-rainbow CD disc with center ring)
+	#    - `>= 1.25s` (`COMPUTER_GUARD_TIME`): becomes the full CD-ROM disc (`ComputerCdDiscSprite`) and slides horizontally into the slot!
+	computer_in_cable = elapsed >= COMPUTER_GUARD_TIME
+	computer_flung_out = false
+	if animated_sprite != null and is_instance_valid(animated_sprite):
+		if elapsed < 0.35:
+			animated_sprite.frame = 0
+		elif elapsed < 0.80:
+			animated_sprite.frame = 1
+		else:
+			animated_sprite.frame = 2
+	var portal_open: bool = elapsed >= COMPUTER_INSERT_END
+	_update_computer_drops(delta, portal_open)
+
+
+func _update_computer_gear_transforms() -> void:
+	if animated_sprite == null or not is_instance_valid(animated_sprite):
+		return
+	var elapsed: float = COMPUTER_TOTAL_TIME + computer_hold_time if (computer_hold_active or computer_ending_active) else COMPUTER_TOTAL_TIME - computer_reaction_timer
+	var active: bool = computer_reaction_active or computer_hold_active or computer_ending_active
+	var pop: float = clampf(elapsed / 0.30, 0.0, 1.0)
+	if computer_ending_active and computer_ending_timer > 1.35:
+		pop = clampf(1.0 - (computer_ending_timer - 1.35) / 0.30, 0.0, 1.0)
+	var pc_sc: float = COMPUTER_PC_SCALE * (0.70 + 0.30 * pop)
+
+	# 1. Single CRT computer sprite (`ComputerPcSprite`) — switches texture from XP Bliss (`computer_pc_tex_normal`)
+	#    to the Dark Portal screen (`computer_pc_tex_open`) once the CD disc is inserted (`elapsed >= COMPUTER_INSERT_END`),
+	#    so there are NEVER two overlapping computers!
+	if computer_pc_sprite != null and is_instance_valid(computer_pc_sprite):
+		computer_pc_sprite.visible = active
+		if active:
+			var portal_ready: bool = elapsed >= COMPUTER_INSERT_END
+			computer_pc_sprite.texture = (computer_pc_tex_open if (portal_ready and computer_pc_tex_open != null) else computer_pc_tex_normal)
+			computer_pc_sprite.scale = Vector2(pc_sc, pc_sc)
+			computer_pc_sprite.position = COMPUTER_PC_POS
+			computer_pc_sprite.rotation = 0.0
+			computer_pc_sprite.modulate = Color(1.0, 1.0, 1.0, pop)
+
+	if computer_left_portal_sprite != null and is_instance_valid(computer_left_portal_sprite):
+		# Only show the CD-ROM front lip overlay while the CD disc is actively sliding into the slot!
+		var show_lip: bool = active and not computer_ending_active and elapsed >= COMPUTER_GUARD_TIME and elapsed < COMPUTER_INSERT_END
+		computer_left_portal_sprite.visible = show_lip
+		if show_lip:
+			computer_left_portal_sprite.scale = Vector2(pc_sc, pc_sc)
+			computer_left_portal_sprite.position = COMPUTER_PC_POS
+			computer_left_portal_sprite.rotation = 0.0
+			computer_left_portal_sprite.modulate = Color(1.0, 1.0, 1.0, pop)
+
+	# 2. 冰箱爷爷变成光盘是水平插入，不是竖着插入 (`computer_attack_prop_sprite` = `paper_fridge_cd_disc.png`):
+	#    - `0.0 .. 0.35s`: Appears in front of the CD drive (`y = -32.0`, right in front of the keyboard) and
+	#      tilts/flattens into a horizontal flat disc (`scale.y` compresses from `cd_sc` down to `cd_sc * 0.28`)!
+	#    - `0.35 .. insert_dur`: Slides horizontally forward into the horizontal CD-ROM drive slot (`y = -32.0 -> -66.0`,
+	#      where its back edge passes under `ComputerXpFrontLipSprite` at y = -64 and disappears inside the tray)!
+	if computer_attack_prop_sprite != null and is_instance_valid(computer_attack_prop_sprite):
+		var cd_t: float = elapsed - COMPUTER_GUARD_TIME
+		var insert_dur: float = COMPUTER_INSERT_END - COMPUTER_GUARD_TIME
+		var show_cd: bool = active and not computer_ending_active and elapsed >= COMPUTER_GUARD_TIME and cd_t < insert_dur
+		computer_attack_prop_sprite.visible = show_cd
+		if show_cd:
+			var cd_sc: float = COMPUTER_CD_SCALE
+			if cd_t < 0.35:
+				# Tilts flat into horizontal orientation in front of the CD-ROM tray!
+				var tilt_t: float = clampf(cd_t / 0.35, 0.0, 1.0)
+				var flat_y: float = lerpf(0.85, 0.28, tilt_t)
+				computer_attack_prop_sprite.scale = Vector2(cd_sc, cd_sc * flat_y)
+				computer_attack_prop_sprite.position = Vector2(0.0, lerpf(-48.0, -34.0, tilt_t))
+				computer_attack_prop_sprite.rotation = 0.0
+				computer_attack_prop_sprite.modulate = Color.WHITE
+			else:
+				# Slides horizontally into the horizontal CD-ROM drive slot (`y: -34.0 -> -68.0`, disappearing behind `ComputerXpFrontLipSprite` at y >= -64)!
+				var p: float = clampf((cd_t - 0.35) / maxf(insert_dur - 0.35, 0.1), 0.0, 1.0)
+				var eased_p: float = p * p
+				var depth_w: float = lerpf(1.0, 0.72, eased_p)
+				computer_attack_prop_sprite.scale = Vector2(cd_sc * depth_w, cd_sc * 0.26)
+				computer_attack_prop_sprite.position = Vector2(0.0, lerpf(-34.0, -68.0, eased_p))
+				computer_attack_prop_sprite.rotation = 0.0
+				computer_attack_prop_sprite.modulate = Color(1.0, 1.0, 1.0, clampf(1.0 - (p - 0.78) * 4.5, 0.0, 1.0))
+
+	# 2. 传送门里的漩涡要有旋转的特效 (`ComputerRightPortalSprite` = `paper_green_vortex_disc.png`):
+	#    Spins continuously (`rotation = computer_vortex_clock * 3.6`) right inside the Dark Portal archway on the monitor screen!
+	if computer_right_portal_sprite != null and is_instance_valid(computer_right_portal_sprite):
+		var show_portal: bool = active and elapsed >= COMPUTER_INSERT_END
+		computer_right_portal_sprite.visible = show_portal
+		if show_portal:
+			var p_pop: float = clampf((elapsed - COMPUTER_INSERT_END) / 0.30, 0.0, 1.0) * pop
+			var pulse: float = 1.0 + 0.06 * sin(computer_vortex_clock * 5.0)
+			var v_sc: float = COMPUTER_SCREEN_PORTAL_SCALE * p_pop * pulse
+			computer_right_portal_sprite.scale = Vector2(v_sc, v_sc)
+			computer_right_portal_sprite.position = COMPUTER_PC_POS + COMPUTER_SCREEN_PORTAL_OFFSET
+			computer_right_portal_sprite.rotation = computer_vortex_clock * 3.6
+			computer_right_portal_sprite.modulate = Color(1.0, 1.0, 1.0, p_pop * 0.92)
+
+	# Hide unused legacy sprites
+	if computer_bulge_poly != null and is_instance_valid(computer_bulge_poly):
+		computer_bulge_poly.visible = false
+	for unused: Sprite2D in [
+		computer_rj45_sprite,
+		computer_stormwind_sprite,
+		computer_right_weapon_sprite,
+	]:
+		if unused != null and is_instance_valid(unused):
+			unused.visible = false
+
+
+## 游戏机手柄 (controller) countdown performance: a Xiaobawang learning console + CRT TV set
+## appears, and the fridge man transforms into a game cartridge and plugs into the learning machine!
+func play_controller_preview(duration: float) -> void:
+	if duration <= 0.0:
+		return
+	play_controller_reaction()
+	controller_preview_timer = duration
+
+
+func play_controller_reaction() -> void:
+	stop_idle_action()
+	stop_pager_reaction()
+	stop_cassette_reaction()
+	stop_tv_reaction()
+	stop_computer_reaction()
+	controller_preview_timer = 0.0
+	controller_hold_active = false
+	controller_hold_time = 0.0
+	controller_ending_active = false
+	controller_ending_timer = 0.0
+	juggle_preview_timer = 0.0
+	rest_preview_timer = 0.0
+	ball_drop_active = false
+	ball_drop_timer = 0.0
+	if ball_drop_sprite != null and is_instance_valid(ball_drop_sprite):
+		ball_drop_sprite.visible = false
+	_update_juggle_state()
+	_update_rest_state()
+	if animated_sprite == null or not is_instance_valid(animated_sprite):
+		return
+	if not animated_sprite.sprite_frames.has_animation(CONTROLLER_ANIMATION_NAME):
+		return
+	_ensure_controller_sprites()
+	controller_reaction_active = true
+	controller_reaction_timer = CONTROLLER_TOTAL_TIME
+	_set_sprite_scale_for(CONTROLLER_FRAME_SIZE)
+	animated_sprite.animation = CONTROLLER_ANIMATION_NAME
+	animated_sprite.frame = 0
+	animated_sprite.play()
+	_update_controller_platform_and_prop(0.0)
+
+
+## 1. 手柄游戏动画，在倒计时结束时，冰箱爷爷从游戏机插槽中弹出，变成一个红色蘑菇后消失！
+func play_controller_ending() -> void:
+	if not controller_reaction_active and not controller_hold_active and not controller_ending_active:
+		_ensure_controller_sprites()
+	controller_reaction_active = false
+	controller_reaction_timer = 0.0
+	controller_hold_active = false
+	controller_preview_timer = 0.0
+	controller_ending_active = true
+	controller_ending_timer = 0.0
+
+
+func stop_controller_reaction() -> void:
+	if not controller_reaction_active and not controller_hold_active and not controller_ending_active:
+		return
+	controller_reaction_active = false
+	controller_reaction_timer = 0.0
+	controller_hold_active = false
+	controller_hold_time = 0.0
+	controller_preview_timer = 0.0
+	controller_ending_active = false
+	controller_ending_timer = 0.0
+	_hide_controller_props()
+	if animated_sprite != null and is_instance_valid(animated_sprite):
+		animated_sprite.visible = not art_hidden
+	_play_current_animation()
+
+
+func is_controller_jumping() -> bool:
+	return controller_reaction_active or controller_hold_active or controller_ending_active
+
+
+## 2. 鼠标点击云朵，云朵会消失: checks if `global_point` hits any active rising smiley cloud and
+## immediately dismisses it!
+func try_click_controller_cloud(global_point: Vector2) -> bool:
+	if not (controller_reaction_active or controller_hold_active or controller_ending_active):
+		return false
+	var local_pt: Vector2 = to_local(global_point)
+	for i in range(controller_cloud_sprites.size()):
+		var cs: Sprite2D = controller_cloud_sprites[i]
+		if cs == null or not is_instance_valid(cs) or not cs.visible:
+			continue
+		var st: Dictionary = controller_cloud_states[i]
+		if not bool(st.get("active", false)):
+			continue
+		var hit_radius: float = maxf(128.0 * absf(cs.scale.x) + 18.0, 42.0)
+		if local_pt.distance_to(cs.position) <= hit_radius:
+			st["active"] = false
+			cs.visible = false
+			return true
+	return false
+
+
+func set_controller_prop(prop_id: String) -> void:
+	if not CONTROLLER_PROP_TYPES.has(prop_id):
+		return
+	controller_prop_id = prop_id
+	if controller_prop_sprite != null and is_instance_valid(controller_prop_sprite):
+		var cart_tex := _load_texture(str(CONTROLLER_PROP_TYPES[prop_id]))
+		if cart_tex != null:
+			controller_prop_sprite.texture = cart_tex
+			if cart_tex.get_width() >= 256 * CONTROLLER_CARTRIDGE_FRAMES:
+				controller_prop_sprite.hframes = CONTROLLER_CARTRIDGE_FRAMES
+				controller_prop_sprite.vframes = 1
+				controller_prop_sprite.frame = 0
+			else:
+				controller_prop_sprite.hframes = 1
+				controller_prop_sprite.vframes = 1
+				controller_prop_sprite.frame = 0
+
+
+func _ensure_controller_sprites() -> void:
+	if controller_platform_sprite == null or not is_instance_valid(controller_platform_sprite):
+		controller_platform_sprite = Sprite2D.new()
+		controller_platform_sprite.name = "ControllerPlatformSprite"
+		controller_platform_sprite.texture = _load_texture(CONTROLLER_CONSOLE_TV_PATH)
+		controller_platform_sprite.z_index = 11
+		controller_platform_sprite.visible = false
+		add_child(controller_platform_sprite)
+	if controller_platform_sky_sprite == null or not is_instance_valid(controller_platform_sky_sprite):
+		controller_platform_sky_sprite = Sprite2D.new()
+		controller_platform_sky_sprite.name = "ControllerPlatformSkySprite"
+		controller_platform_sky_sprite.texture = _load_texture(CONTROLLER_CONSOLE_TV_BLUE_SKY_PATH)
+		controller_platform_sky_sprite.z_index = 12
+		controller_platform_sky_sprite.visible = false
+		add_child(controller_platform_sky_sprite)
+	if controller_prop_sprite == null or not is_instance_valid(controller_prop_sprite):
+		controller_prop_sprite = Sprite2D.new()
+		controller_prop_sprite.name = "ControllerPropSprite"
+		var cart_tex := _load_texture(str(CONTROLLER_PROP_TYPES.get(controller_prop_id, CONTROLLER_CARTRIDGE_PATH)))
+		controller_prop_sprite.texture = cart_tex
+		if cart_tex != null and cart_tex.get_width() >= 256 * CONTROLLER_CARTRIDGE_FRAMES:
+			controller_prop_sprite.hframes = CONTROLLER_CARTRIDGE_FRAMES
+			controller_prop_sprite.vframes = 1
+			controller_prop_sprite.frame = 0
+		controller_prop_sprite.z_index = 13
+		controller_prop_sprite.visible = false
+		add_child(controller_prop_sprite)
+	if controller_front_lip_sprite == null or not is_instance_valid(controller_front_lip_sprite):
+		controller_front_lip_sprite = Sprite2D.new()
+		controller_front_lip_sprite.name = "ControllerFrontLipSprite"
+		controller_front_lip_sprite.texture = _load_texture(CONTROLLER_CONSOLE_FRONT_LIP_PATH)
+		controller_front_lip_sprite.z_index = 14
+		controller_front_lip_sprite.visible = false
+		add_child(controller_front_lip_sprite)
+	if controller_mushroom_sprite == null or not is_instance_valid(controller_mushroom_sprite):
+		controller_mushroom_sprite = Sprite2D.new()
+		controller_mushroom_sprite.name = "ControllerMushroomSprite"
+		controller_mushroom_sprite.texture = _load_texture(CONTROLLER_MUSHROOM_PATH)
+		controller_mushroom_sprite.z_index = 16
+		controller_mushroom_sprite.visible = false
+		add_child(controller_mushroom_sprite)
+	# 2. 键盘上的按键被按下的动效: 6 keycap press indicators across the Xiaobawang keyboard rows
+	while controller_key_sprites.size() < CONTROLLER_KEY_COUNT:
+		var kp := Polygon2D.new()
+		kp.name = "ControllerKeyPress%d" % controller_key_sprites.size()
+		kp.polygon = PackedVector2Array([
+			Vector2(-7.0, -4.5),
+			Vector2(7.0, -4.5),
+			Vector2(8.0, 4.5),
+			Vector2(-8.0, 4.5),
+		])
+		kp.color = Color(0.56, 0.42, 0.28, 0.85)
+		kp.z_index = 15
+		kp.visible = false
+		add_child(kp)
+		controller_key_sprites.append(kp)
+	var cloud_tex := _load_texture(CONTROLLER_CLOUD_PATH)
+	while controller_cloud_sprites.size() < CONTROLLER_CLOUD_POOL_SIZE:
+		var cs := Sprite2D.new()
+		cs.name = "ControllerSmileyCloud%d" % controller_cloud_sprites.size()
+		cs.texture = cloud_tex
+		cs.z_index = 15
+		cs.visible = false
+		add_child(cs)
+		controller_cloud_sprites.append(cs)
+		controller_cloud_states.append({"active": false})
+	var brick_tex := _load_texture(CONTROLLER_BRICK_PATH)
+	while controller_brick_sprites.size() < CONTROLLER_BRICK_POOL_SIZE:
+		var bs := Sprite2D.new()
+		bs.name = "ControllerTvBrick%d" % controller_brick_sprites.size()
+		bs.texture = brick_tex
+		bs.z_index = 13
+		bs.visible = false
+		add_child(bs)
+		controller_brick_sprites.append(bs)
+		controller_brick_states.append({"active": false})
+
+
+func _hide_controller_props() -> void:
+	for s: Sprite2D in [controller_platform_sprite, controller_platform_sky_sprite, controller_front_lip_sprite, controller_prop_sprite, controller_mushroom_sprite]:
+		if s != null and is_instance_valid(s):
+			s.visible = false
+	for kp: Polygon2D in controller_key_sprites:
+		if kp != null and is_instance_valid(kp):
+			kp.visible = false
+	for cs: Sprite2D in controller_cloud_sprites:
+		if cs != null and is_instance_valid(cs):
+			cs.visible = false
+	for i in range(controller_cloud_states.size()):
+		controller_cloud_states[i]["active"] = false
+	controller_cloud_spawn_clock = 0.0
+	controller_cloud_next_idx = 0
+	for bs: Sprite2D in controller_brick_sprites:
+		if bs != null and is_instance_valid(bs):
+			bs.visible = false
+	for i in range(controller_brick_states.size()):
+		controller_brick_states[i]["active"] = false
+	controller_brick_spawn_clock = 0.0
+	controller_brick_next_idx = 0
+
+
+func _spawn_controller_tv_brick() -> void:
+	if controller_brick_sprites.is_empty():
+		return
+	var idx: int = controller_brick_next_idx % controller_brick_sprites.size()
+	var lane_y_options := [-218.0, -188.0, -158.0]
+	var lane_y: float = float(lane_y_options[controller_brick_next_idx % lane_y_options.size()])
+	controller_brick_next_idx += 1
+	var bs: Sprite2D = controller_brick_sprites[idx]
+	if bs == null or not is_instance_valid(bs):
+		return
+	bs.position = Vector2(-62.0, lane_y)
+	bs.scale = Vector2(0.08, 0.08)
+	bs.rotation = 0.0
+	bs.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	bs.visible = true
+	controller_brick_states[idx] = {
+		"active": true,
+		"age": 0.0,
+		"lane_y": lane_y,
+		"target_scale": 0.11,
+	}
+
+
+func _update_controller_tv_bricks(delta: float, running: bool) -> void:
+	if running:
+		controller_brick_spawn_clock += delta
+		if controller_brick_spawn_clock >= CONTROLLER_BRICK_SPAWN_INTERVAL:
+			controller_brick_spawn_clock -= CONTROLLER_BRICK_SPAWN_INTERVAL
+			_spawn_controller_tv_brick()
+	for i in range(controller_brick_sprites.size()):
+		var bs: Sprite2D = controller_brick_sprites[i]
+		if bs == null or not is_instance_valid(bs):
+			continue
+		var st: Dictionary = controller_brick_states[i]
+		if not bool(st.get("active", false)):
+			bs.visible = false
+			continue
+		var age: float = float(st.get("age", 0.0)) + delta
+		st["age"] = age
+		if age >= CONTROLLER_BRICK_TRAVEL_TIME:
+			st["active"] = false
+			bs.visible = false
+			continue
+		# Travels from left to right inside the blue-sky TV screen (`x = -62 .. +18`), fading in at
+		# the left edge of the CRT bezel and fading out before the right edge of the CRT bezel!
+		var t: float = clampf(age / CONTROLLER_BRICK_TRAVEL_TIME, 0.0, 1.0)
+		var x_pos: float = lerpf(-62.0, 18.0, t)
+		var y_pos: float = float(st["lane_y"])
+		var fade_in: float = clampf(t / 0.18, 0.0, 1.0)
+		var fade_out: float = clampf((1.0 - t) / 0.18, 0.0, 1.0)
+		var alpha: float = minf(fade_in, fade_out)
+		var sc: float = float(st["target_scale"]) * (0.65 + 0.35 * alpha)
+		bs.position = Vector2(x_pos, y_pos)
+		bs.scale = Vector2(sc, sc)
+		bs.modulate = Color(1.0, 1.0, 1.0, alpha)
+		bs.visible = true
+
+
+## Returns the top edge of the visible screen in this player's local space so clouds keep rising all
+## the way up until they reach the top screen border (`一直向上移动，直到屏幕边框再自动消失`).
+func _get_controller_screen_top_local_y() -> float:
+	if is_inside_tree() and get_viewport() != null:
+		var inv_canvas: Transform2D = get_viewport().get_canvas_transform().affine_inverse()
+		var world_top_left: Vector2 = inv_canvas * Vector2.ZERO
+		return to_local(world_top_left).y
+	return -720.0
+
+
+func _spawn_controller_smiley_cloud() -> void:
+	if controller_cloud_sprites.is_empty():
+		return
+	var idx := -1
+	for i in range(controller_cloud_states.size()):
+		if not bool(controller_cloud_states[i].get("active", false)):
+			idx = i
+			break
+	if idx < 0:
+		# All cloud slots are still rising toward the top screen border; wait until one reaches the border!
+		return
+	var cs: Sprite2D = controller_cloud_sprites[idx]
+	if cs == null or not is_instance_valid(cs):
+		return
+	# 1. 手柄游戏动画里的云朵需要改成一直向上移动，直到屏幕边框再自动消失:
+	#    Spawns inside the blue-sky TV screen (`y = -176 .. -164`) and rises steadily all the way to the
+	#    top screen border (`_get_controller_screen_top_local_y()`) before disappearing!
+	var start_pos := Vector2(randf_range(-44.0, 14.0), randf_range(-176.0, -164.0))
+	cs.position = start_pos
+	cs.scale = Vector2(0.05, 0.05)
+	cs.rotation = 0.0
+	cs.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	cs.visible = true
+	controller_cloud_states[idx] = {
+		"active": true,
+		"age": 0.0,
+		"start_pos": start_pos,
+		"sway_phase": randf_range(0.0, TAU),
+		"sway_amp": randf_range(6.0, 12.0),
+		"rise_speed": randf_range(22.0, 28.0),
+		"target_scale": randf_range(0.22, 0.28),
+	}
+
+
+func _update_controller_keyboard_keys(elapsed: float, running: bool) -> void:
+	var key_slots := [
+		Vector2(-52.0, -55.0),
+		Vector2(-26.0, -51.0),
+		Vector2(0.0, -55.0),
+		Vector2(26.0, -51.0),
+		Vector2(50.0, -55.0),
+		Vector2(10.0, -45.0),
+	]
+	for i in range(controller_key_sprites.size()):
+		var kp: Polygon2D = controller_key_sprites[i]
+		if kp == null or not is_instance_valid(kp):
+			continue
+		if not running:
+			kp.visible = false
+			continue
+		var phase_val: float = sin(elapsed * 11.0 + float(i) * 1.65)
+		var pressed: bool = phase_val > 0.25
+		kp.visible = true
+		var base_pos: Vector2 = key_slots[i % key_slots.size()]
+		if pressed:
+			var depth: float = clampf((phase_val - 0.25) / 0.75, 0.0, 1.0)
+			kp.position = base_pos + Vector2(0.0, 2.5 * depth)
+			kp.scale = Vector2(1.05, 0.72)
+			kp.color = Color(0.42, 0.28, 0.16, 0.90)
+		else:
+			kp.position = base_pos
+			kp.scale = Vector2(1.0, 0.45)
+			kp.color = Color(1.0, 0.96, 0.86, 0.55)
+
+
+func _update_controller_smiley_clouds(delta: float, running: bool) -> void:
+	if running:
+		controller_cloud_spawn_clock += delta
+		if controller_cloud_spawn_clock >= CONTROLLER_CLOUD_SPAWN_INTERVAL:
+			controller_cloud_spawn_clock -= CONTROLLER_CLOUD_SPAWN_INTERVAL
+			_spawn_controller_smiley_cloud()
+	var screen_top_y: float = _get_controller_screen_top_local_y()
+	for i in range(controller_cloud_sprites.size()):
+		var cs: Sprite2D = controller_cloud_sprites[i]
+		if cs == null or not is_instance_valid(cs):
+			continue
+		var st: Dictionary = controller_cloud_states[i]
+		if not bool(st.get("active", false)):
+			cs.visible = false
+			continue
+		var age: float = float(st.get("age", 0.0)) + delta
+		st["age"] = age
+		var start_pos: Vector2 = st["start_pos"]
+		var sway: float = sin(age * 3.0 + float(st["sway_phase"])) * float(st["sway_amp"])
+		var y_pos: float = start_pos.y - age * float(st["rise_speed"])
+		# Keep rising all the way up until the cloud reaches the top screen border (`screen_top_y`)!
+		if y_pos <= screen_top_y - 24.0 or age >= CONTROLLER_CLOUD_RISE_TIME:
+			st["active"] = false
+			cs.visible = false
+			continue
+		var pop: float = clampf(age / 0.35, 0.0, 1.0)
+		var border_dist: float = y_pos - screen_top_y
+		var fade: float = clampf((border_dist + 24.0) / 48.0, 0.0, 1.0)
+		var sc: float = float(st["target_scale"]) * (0.45 + 0.55 * pop)
+		cs.position = Vector2(start_pos.x + sway, y_pos)
+		cs.scale = Vector2(sc, sc)
+		cs.rotation = sin(age * 2.4 + float(st["sway_phase"])) * 0.08
+		cs.modulate = Color(1.0, 1.0, 1.0, minf(pop, fade))
+		cs.visible = true
+
+
+func _get_controller_scale_multiplier() -> float:
+	var elapsed: float = CONTROLLER_TOTAL_TIME if controller_hold_active else CONTROLLER_TOTAL_TIME - controller_reaction_timer
+	if elapsed < CONTROLLER_BEATS[0]:
+		var t: float = clampf(elapsed / CONTROLLER_BEATS[0], 0.0, 1.0)
+		return lerpf(1.0, 0.35, t * t)
+	return 0.35
+
+
+func _get_controller_offset() -> Vector2:
+	var elapsed: float = CONTROLLER_TOTAL_TIME if controller_hold_active else CONTROLLER_TOTAL_TIME - controller_reaction_timer
+	if elapsed < CONTROLLER_BEATS[0]:
+		return Vector2(sin(elapsed * 48.0), cos(elapsed * 42.0)) * 7.0
+	return Vector2.ZERO
+
+
+func _update_controller_reaction(delta: float) -> void:
+	if controller_ending_active:
+		controller_ending_timer += delta
+		if controller_ending_timer >= CONTROLLER_ENDING_TOTAL_TIME:
+			stop_controller_reaction()
+			performance_finished.emit()
+		return
+	if controller_preview_timer > 0.0:
+		controller_preview_timer = maxf(controller_preview_timer - delta, 0.0)
+		if controller_preview_timer <= 0.0:
+			play_controller_ending()
+			return
+	if controller_hold_active:
+		controller_hold_time += delta
+		return
+	controller_reaction_timer -= delta
+	if controller_reaction_timer <= 0.0:
+		controller_reaction_timer = 0.0
+		controller_reaction_active = false
+		controller_hold_active = true
+		controller_hold_time = 0.0
+		performance_finished.emit()
+
+
+func _update_controller_platform_and_prop(delta: float) -> void:
+	var elapsed: float = CONTROLLER_TOTAL_TIME + controller_hold_time if (controller_hold_active or controller_ending_active) else CONTROLLER_TOTAL_TIME - controller_reaction_timer
+	var show_console: bool = controller_reaction_active or controller_hold_active or controller_ending_active
+	var pop: float = clampf(elapsed / 0.30, 0.0, 1.0)
+	if controller_ending_active and controller_ending_timer > 1.15:
+		pop = clampf(1.0 - (controller_ending_timer - 1.15) / 0.40, 0.0, 1.0)
+	var c_sc: float = CONTROLLER_CONSOLE_SCALE * (0.7 + 0.3 * pop)
+	if controller_platform_sprite != null and is_instance_valid(controller_platform_sprite):
+		controller_platform_sprite.visible = show_console
+		if show_console:
+			controller_platform_sprite.scale = Vector2(c_sc, c_sc)
+			controller_platform_sprite.position = Vector2(0.0, -142.0)
+			controller_platform_sprite.modulate = Color(1.0, 1.0, 1.0, pop)
+	if controller_front_lip_sprite != null and is_instance_valid(controller_front_lip_sprite):
+		controller_front_lip_sprite.visible = show_console
+		if show_console:
+			controller_front_lip_sprite.scale = Vector2(c_sc, c_sc)
+			controller_front_lip_sprite.position = Vector2(0.0, -142.0)
+			controller_front_lip_sprite.modulate = Color(1.0, 1.0, 1.0, pop)
+
+	var plugged_in := false
+	var cart_sc: float = CONTROLLER_CARTRIDGE_SCALE
+	if controller_ending_active:
+		# 1. 在倒计时结束时，冰箱爷爷从游戏机插槽中弹出，变成一个红色蘑菇后消失！
+		#    - `0.0 .. 0.48s`: Cartridge pops straight up out of the console slot (`-78 -> -215`)!
+		#    - `0.48 .. 1.55s`: Transforms into the red mushroom (`ControllerMushroomSprite`) which
+		#      bounces, puffs up, and fades out (`变成一个红色蘑菇后消失`)!
+		var et: float = controller_ending_timer
+		if controller_prop_sprite != null and is_instance_valid(controller_prop_sprite):
+			if et < 0.48:
+				controller_prop_sprite.visible = true
+				var p_out: float = clampf(et / 0.48, 0.0, 1.0)
+				var arc_out: float = 1.0 - pow(1.0 - p_out, 2.0)
+				var shrink: float = lerpf(1.0, 0.35, clampf((et - 0.32) / 0.16, 0.0, 1.0))
+				controller_prop_sprite.scale = Vector2(cart_sc * shrink, cart_sc * shrink)
+				controller_prop_sprite.position = Vector2(0.0, lerpf(-78.0, -215.0, arc_out))
+				controller_prop_sprite.rotation = p_out * 0.25
+			else:
+				controller_prop_sprite.visible = false
+				controller_prop_sprite.rotation = 0.0
+		if controller_mushroom_sprite != null and is_instance_valid(controller_mushroom_sprite):
+			var show_mush: bool = et >= 0.42
+			controller_mushroom_sprite.visible = show_mush
+			if show_mush:
+				var mt: float = clampf((et - 0.42) / (CONTROLLER_ENDING_TOTAL_TIME - 0.42), 0.0, 1.0)
+				var m_pop: float = clampf(mt / 0.25, 0.0, 1.0)
+				var m_fade: float = clampf((1.0 - mt) / 0.40, 0.0, 1.0)
+				var m_sc: float = 0.30 * (0.40 + 0.75 * sin(m_pop * PI * 0.5)) * (0.6 + 0.4 * m_fade)
+				var m_hop: float = -sin(minf(mt * 1.4, 1.0) * PI) * 42.0
+				controller_mushroom_sprite.scale = Vector2(m_sc, m_sc)
+				controller_mushroom_sprite.position = Vector2(0.0, -215.0 + m_hop)
+				controller_mushroom_sprite.modulate = Color(1.0, 1.0, 1.0, m_fade)
+	else:
+		if controller_mushroom_sprite != null and is_instance_valid(controller_mushroom_sprite):
+			controller_mushroom_sprite.visible = false
+		if controller_prop_sprite != null and is_instance_valid(controller_prop_sprite):
+			controller_prop_sprite.rotation = 0.0
+			var show_cart: bool = show_console and elapsed >= CONTROLLER_BEATS[0]
+			controller_prop_sprite.visible = show_cart
+			if show_cart:
+				var cart_t: float = elapsed - CONTROLLER_BEATS[0]
+				var insert_dur: float = CONTROLLER_BEATS[1] + CONTROLLER_BEATS[2]
+				if cart_t < 0.35:
+					# Hovering high above the console slot after transforming from the grandpa
+					var pop_c: float = clampf(cart_t / 0.20, 0.0, 1.0)
+					controller_prop_sprite.scale = Vector2(cart_sc * pop_c, cart_sc * pop_c)
+					controller_prop_sprite.position = Vector2(0.0, -245.0)
+					if controller_prop_sprite.hframes > 1:
+						controller_prop_sprite.frame = 0
+				elif cart_t < insert_dur:
+					# Plunging straight down into the Xiaobawang cartridge slot (its bottom half disappears behind `ControllerFrontLipSprite`!)
+					var p: float = clampf((cart_t - 0.35) / maxf(insert_dur - 0.35, 0.1), 0.0, 1.0)
+					var eased_p: float = p * p
+					controller_prop_sprite.scale = Vector2(cart_sc, cart_sc)
+					controller_prop_sprite.position = Vector2(0.0, lerpf(-245.0, -78.0, eased_p))
+					if controller_prop_sprite.hframes > 1:
+						controller_prop_sprite.frame = 0
+				else:
+					# 1. 卡带插入游戏机，下半部分在卡槽内被遮挡看不到 (`y = -78.0` behind `ControllerFrontLipSprite`),
+					#    上半部分露在卡槽上方并保持静止、循环播放面部表情！
+					plugged_in = true
+					var hold_t: float = elapsed - CONTROLLER_TOTAL_TIME
+					controller_prop_sprite.scale = Vector2(cart_sc, cart_sc)
+					controller_prop_sprite.position = Vector2(0.0, -78.0)
+					if controller_prop_sprite.hframes > 1:
+						var expr_order := [0, 1, 0, 2, 0, 3]
+						var step: int = int(hold_t * CONTROLLER_CARTRIDGE_FPS) % expr_order.size()
+						controller_prop_sprite.frame = int(expr_order[step])
+
+	# 2. 游戏机后面的电视机里先黑屏 (`ControllerPlatformSprite`), 卡带插入后变成蓝天 (`ControllerPlatformSkySprite`),
+	#    白云缓慢向上升空 (`_update_controller_smiley_clouds`) + 砖块平台从左到右出现 + 键盘按键按下动效!
+	var sky_alpha := 0.0
+	if show_console and plugged_in:
+		var hold_t2: float = elapsed - CONTROLLER_TOTAL_TIME
+		sky_alpha = clampf(hold_t2 / 0.55, 0.0, 1.0)
+	if controller_platform_sky_sprite != null and is_instance_valid(controller_platform_sky_sprite):
+		controller_platform_sky_sprite.visible = show_console and sky_alpha > 0.01
+		if controller_platform_sky_sprite.visible:
+			controller_platform_sky_sprite.scale = Vector2(c_sc, c_sc)
+			controller_platform_sky_sprite.position = Vector2(0.0, -142.0)
+			controller_platform_sky_sprite.modulate = Color(1.0, 1.0, 1.0, sky_alpha)
+	_update_controller_keyboard_keys(elapsed, plugged_in)
+	_update_controller_smiley_clouds(delta, plugged_in and sky_alpha >= 0.45)
+	_update_controller_tv_bricks(delta, plugged_in and sky_alpha >= 0.45)
+
+
 func _play_current_animation() -> void:
 	if pager_reaction_active or pager_hold_active:
 		return
 	if cassette_reaction_active or cassette_hold_active:
 		return
 	if tv_reaction_active or tv_hold_active:
+		return
+	if computer_reaction_active or computer_hold_active or computer_ending_active:
+		return
+	if controller_reaction_active or controller_hold_active or controller_ending_active:
 		return
 	if idle_action_id != "":
 		var idle_entry: Dictionary = IDLE_ACTIONS[idle_action_id]
@@ -1746,15 +3211,20 @@ func _play_current_animation() -> void:
 func _set_sprite_scale_for(source_frame_size: Vector2i, size_multiplier: float = 1.0) -> void:
 	var base_scale: float = display_height / float(source_frame_size.y)
 	var scale_factor: float = base_scale * size_multiplier
+	if computer_reaction_active or computer_hold_active:
+		scale_factor *= _get_computer_scale_multiplier()
+	if controller_reaction_active or controller_hold_active:
+		scale_factor *= _get_controller_scale_multiplier()
 	animated_sprite.scale = Vector2(scale_factor, scale_factor)
 	# Scaling happens about the sprite's centre, so slide it down by half of what
 	# it gained to keep the bottom edge of the frame - where his feet are - on the
 	# same ground line as the idle.
-	sprite_scale_drop = float(source_frame_size.y) * 0.5 * (base_scale - scale_factor)
+	if (computer_reaction_active or computer_hold_active) or (controller_reaction_active or controller_hold_active):
+		sprite_scale_drop = 0.0
+	else:
+		sprite_scale_drop = float(source_frame_size.y) * 0.5 * (base_scale - scale_factor)
 
 
-## The circular countdown ring that used to be drawn behind the character is gone
-## at the user's request - the performances no longer sit inside a timer circle.
 func _draw() -> void:
 	pass
 
@@ -1825,6 +3295,9 @@ func _draw_vhs(center: Vector2) -> void:
 func _update_shadow_visibility() -> void:
 	if shadow_polygon == null or not is_instance_valid(shadow_polygon):
 		return
+	# Keep the ground shadow visible during the controller performance so both the ground line and the
+	# bottom edge of the console (`y ≈ +17`, right inside the shadow's `y = -8 .. +16` slab) are always
+	# firmly inside the desktop-pet window's passthrough region!
 	shadow_polygon.visible = not (tv_reaction_active or tv_hold_active)
 
 
@@ -1859,6 +3332,8 @@ func _create_animation() -> void:
 	_add_pager_animation(frames)
 	_add_cassette_animation(frames)
 	_add_tv_animation(frames)
+	_add_computer_animation(frames)
+	_add_controller_animation(frames)
 	_add_idle_action_animations(frames)
 	_add_doze_animations(frames)
 
@@ -2009,6 +3484,52 @@ func _add_tv_animation(frames: SpriteFrames) -> void:
 		frames.add_frame(TV_ANIMATION_NAME, atlas_texture, float(TV_BEATS[frame_index]))
 
 
+## 复古电脑 (computer): the four-frame orc warrior sequence (startle -> armor donned -> raised
+## dual-axe chop -> swung chop), held on the two chop frames by the code.
+func _add_computer_animation(frames: SpriteFrames) -> void:
+	var orc_texture: Texture2D = _load_texture(COMPUTER_ATLAS_PATH)
+	if orc_texture == null:
+		push_warning("Computer orc atlas not found: %s" % COMPUTER_ATLAS_PATH)
+		return
+	frames.add_animation(COMPUTER_ANIMATION_NAME)
+	frames.set_animation_speed(COMPUTER_ANIMATION_NAME, 1.0)
+	frames.set_animation_loop(COMPUTER_ANIMATION_NAME, false)
+	var total_frames: int = maxi(int(float(orc_texture.get_width()) / float(COMPUTER_FRAME_SIZE.x)), COMPUTER_BEATS.size())
+	for frame_index in range(total_frames):
+		var atlas_texture := AtlasTexture.new()
+		atlas_texture.atlas = orc_texture
+		atlas_texture.region = Rect2(
+			frame_index * COMPUTER_FRAME_SIZE.x,
+			0,
+			COMPUTER_FRAME_SIZE.x,
+			COMPUTER_FRAME_SIZE.y
+		)
+		var beat_dur: float = float(COMPUTER_BEATS[frame_index]) if frame_index < COMPUTER_BEATS.size() else 0.5
+		frames.add_frame(COMPUTER_ANIMATION_NAME, atlas_texture, beat_dur)
+
+
+## 游戏机手柄 (controller): the three-frame plumber jump sequence (startle -> standing on platform ->
+## jumping in the air), held on the continuous platform jump by the code.
+func _add_controller_animation(frames: SpriteFrames) -> void:
+	var plumber_texture: Texture2D = _load_texture(CONTROLLER_ATLAS_PATH)
+	if plumber_texture == null:
+		push_warning("Controller plumber atlas not found: %s" % CONTROLLER_ATLAS_PATH)
+		return
+	frames.add_animation(CONTROLLER_ANIMATION_NAME)
+	frames.set_animation_speed(CONTROLLER_ANIMATION_NAME, 1.0)
+	frames.set_animation_loop(CONTROLLER_ANIMATION_NAME, false)
+	for frame_index in range(CONTROLLER_BEATS.size()):
+		var atlas_texture := AtlasTexture.new()
+		atlas_texture.atlas = plumber_texture
+		atlas_texture.region = Rect2(
+			frame_index * CONTROLLER_FRAME_SIZE.x,
+			0,
+			CONTROLLER_FRAME_SIZE.x,
+			CONTROLLER_FRAME_SIZE.y
+		)
+		frames.add_frame(CONTROLLER_ANIMATION_NAME, atlas_texture, float(CONTROLLER_BEATS[frame_index]))
+
+
 ## Creates the swappable flying objects using the currently selected
 ## projectile texture (see set_juggle_projectile).
 ## Idle bits of business: three-frame atlases registered as looping animations.
@@ -2066,7 +3587,14 @@ func _create_doze_cycle() -> void:
 ## idle action, the pager reaction or the ball-to-the-face ending - pauses the
 ## doze, so two animations never fight over the sprite.
 func _is_doze_action() -> bool:
-	return idle_action_id == DOZE_ACTION_ID and not (juggling or resting or ball_drop_active or pager_reaction_active or pager_hold_active)
+	return not art_hidden and idle_action_id == DOZE_ACTION_ID and not (
+		juggling or resting or ball_drop_active
+		or pager_reaction_active or pager_hold_active
+		or cassette_reaction_active or cassette_hold_active
+		or tv_reaction_active or tv_hold_active
+		or computer_reaction_active or computer_hold_active
+		or controller_reaction_active or controller_hold_active
+	)
 
 
 ## 打瞌睡: drives the default standing idle. He stands there for a while, nods off

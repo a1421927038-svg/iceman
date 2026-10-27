@@ -46,12 +46,49 @@ const FRIDGE_ITEMS := [
 	{"id": "walkman", "name": "随身听", "price": 15, "reward": 15, "variant_id": "walkman", "description": "耳机律动待机"},
 	{"id": "crt", "name": "显像管电视", "price": 20, "reward": 20, "variant_id": "crt", "duration": 240.0, "description": "扫描线待机"},
 	{"id": "vhs", "name": "录像带", "price": 25, "reward": 25, "variant_id": "vhs", "description": "胶带循环待机"},
+	# 90年代收集品: 复古电脑 (5 分钟, orc armor + dual battle axes) and 游戏机手柄 (6 分钟, Super Mario-style
+	# plumber jumping on a brick platform with a growing mushroom).
+	{"id": "computer", "name": "90年代电脑", "price": 30, "reward": 30, "variant_id": "computer", "duration": 300.0, "description": "复古电脑待机"},
+	{"id": "controller", "name": "游戏机手柄", "price": 35, "reward": 35, "variant_id": "controller", "duration": 360.0, "description": "手柄按键待机"},
 ]
 
 ## 猫嘴里去掉: the 随身听 (walkman) and the 录像带 (vhs tape) never appear in the cat's mouth any
 ## more - no ball in its mouth bag and no card in the book's 猫嘴物品 page. They stay in FRIDGE_ITEMS
 ## so the shop rows and the save format are untouched; they are simply never a mouth item.
 const FRIDGE_MOUTH_EXCLUDED_ITEMS := ["walkman", "vhs"]
+
+## 解锁进度: a NEW save starts with an empty collection. The 猫嘴物品 page fills up as the player finds
+## items (「需要通过猫嘴随机解锁」) and the 待机动画 page fills up as they collect (「每解锁3个新物品就自动
+## 解锁一个冰箱人和小猫的待机动画」).
+## ⚠ A save written BEFORE this system existed has no "anims" key: it is treated as FULLY UNLOCKED, so an
+## existing player's notebook does not suddenly empty out (and it is topped up with any items added since).
+const FRIDGE_ITEMS_PER_ANIM_UNLOCK := 3
+## 每次刷新最少3个，最多5个: how many DISTINCT balls one nose-refresh deals into the cat's mouth. The mouth
+## draws from EVERY mouth item (owned or not), so a deal is always really 3..5.
+const FRIDGE_MOUTH_REFRESH_MIN := 3
+const FRIDGE_MOUTH_REFRESH_MAX := 5
+## 每天保底: the FIRST refresh of each calendar day always deals at least one item the player does not own
+## yet (while any are left to find), so collecting never stalls. Later refreshes that same day are pure luck.
+## ⚠ The day marker is fridge_refresh_day (see _roll_fridge_mouth_items): it turns over at midnight.
+## 概率 by 倒计时: every item's weight is the RECIPROCAL of its countdown length (1 / duration), so a short
+## run like 番茄钟 (1 分钟) shows up often and a long one like 显像管电视 (4 分钟) is rare. Items with no
+## fixed duration (90年代电脑 / 游戏机手柄) follow 专注秒数, so they are weighted by whatever that is.
+const FRIDGE_MOUTH_WEIGHT_MIN_DURATION := 5.0
+## 公文包物品: the 公文包's swappable interaction items (FRIDGE_BOX_ENTRIES) are found in the cat's mouth
+## lottery exactly like the countdown items - the first time one is drawn it is PERMANENTLY added to the
+## briefcase (see _roll_fridge_mouth_items). These are the 抽奖 knobs:
+## * 每天前三次刷新保底: the first FRIDGE_DRAW_GUARANTEE_REFRESHES refreshes of each calendar day always
+##   deal at least one not-yet-had item, and each ball is likely to be one.
+## * afterwards the unowned chance drops to FRIDGE_DRAW_UNOWNED_BASE.
+const FRIDGE_DRAW_GUARANTEE_REFRESHES := 3
+const FRIDGE_DRAW_EARLY_UNOWNED_CHANCE := 0.6
+const FRIDGE_DRAW_UNOWNED_BASE := 0.10
+## 明显区分: a 公文包 item's ball is drawn SMALLER and with a BLUE paper token (see FridgeYarnBall), so the
+## cat's mouth tells it from a countdown item at a glance (the icon comes from the box entry's own art).
+const FRIDGE_DRAW_BOX_BALL_RADIUS := 31.0
+## 永远都在: the gallery cards that are NOT animations - the Discord link and the two 中英文切换 cards.
+## They are always on the 骨架 page; every other card waits for its unlock.
+const FRIDGE_GALLERY_ALWAYS_IDS := ["discord", "lang_zh", "lang_en"]
 
 
 func _is_fridge_mouth_item(item_id: String) -> bool:
@@ -129,6 +166,19 @@ const FRIDGE_GALLERY_TITLE := "动作选项"
 ## (every item the player has unlocked, i.e. the ones on show in the cat's mouth).
 const FRIDGE_GALLERY_TAB_SKELETON := "skeleton"
 const FRIDGE_GALLERY_TAB_ITEMS := "items"
+## 公文包物品: shows the already-unlocked briefcase items and their hover descriptions.
+const FRIDGE_GALLERY_TAB_BOX := "box"
+## 进度: the save/read page (see _fridge_progress_entries).
+const FRIDGE_GALLERY_TAB_PROGRESS := "progress"
+## 存档位: at most THREE save slots (「最多创建3个存档」), each with its own logo badge, its own file and
+## its own 读取 / 重置 buttons on the 进度 page. The game's own auto-save (FRIDGE_SAVE_PATH) stays the
+## LIVE state; a slot is a snapshot the player writes on purpose.
+const FRIDGE_SAVE_SLOT_COUNT := 3
+const FRIDGE_SAVE_SLOT_PATH := "user://fridge_people_save_slot%d.json"
+## ⚠ 图标随状态变: a slot's logo is not tied to the slot - it shows the grandpa's own HEAD, happy when the
+## slot holds a save and dozing off (打瞌睡) while it is still empty.
+const FRIDGE_SLOT_SAVED_LOGO := "res://assets/generated/paper_icon_slot_has_save.png"
+const FRIDGE_SLOT_EMPTY_LOGO := "res://assets/generated/paper_icon_slot_no_save.png"
 ## 页签换图标: these two paper LOGOs (a jointed figure for the animation gallery, a cat with a pouch
 ## for the items the cat holds) are what the bookmarks carried when they were labelled. They are
 ## NOT wired right now - the user asked for 素净 ribbons with nothing on them - but the panel still
@@ -211,21 +261,29 @@ const FRIDGE_PANEL_SCREEN_MARGIN := 48.0
 ## with the invite address and a click opens it in the player's browser (see _on_fridge_gallery_entry_pressed).
 const FRIDGE_DISCORD_URL := "https://discord.gg/GCuZSjYba"
 
+## 中英文切换: the two cards that flip the game's text, kept right after the Discord card so they are on
+## the page a player sees first. Their own names/描述 are plain keys, so the cards themselves translate
+## too. ⚠ They are NOT performances: _on_fridge_gallery_entry_pressed handles them before the animation
+## match (no preview, no idle-rotation disturbance).
+const FRIDGE_LANG_ZH_ENTRY_ID := "lang_zh"
+const FRIDGE_LANG_EN_ENTRY_ID := "lang_en"
+
 ## Action/animation entries shown by the wardrobe prop's gallery panel.
 ## New performances just get appended here and mapped in
 ## `_on_fridge_gallery_entry_pressed`.
 const FRIDGE_GALLERY_ENTRIES := [
 	{"id": "discord", "name": "Discord", "description": FRIDGE_DISCORD_URL, "icon": "res://assets/generated/paper_icon_discord.png"},
-	{"id": "juggle", "name": "抛球杂耍", "description": "连续抛接小球", "icon": "res://assets/generated/paper_skeleton_juggle_icon.png"},
+	# 中英文切换: 中文 / 英文 - the two cards that switch the whole game's text (see _set_fridge_language).
+	{"id": FRIDGE_LANG_ZH_ENTRY_ID, "name": "中文", "description": "中文界面", "icon": "res://assets/generated/paper_icon_lang_zh.png"},
+	{"id": FRIDGE_LANG_EN_ENTRY_ID, "name": "英文", "description": "英文界面", "icon": "res://assets/generated/paper_icon_lang_en.png"},
 	{"id": "man_rest_stand", "name": "站立歇息", "description": "靠墙站一会儿", "icon": "res://assets/generated/paper_icon_man_rest_stand.png"},
 	{"id": "man_smoke", "name": "抽烟吐圈", "description": "吐出一个个烟圈", "icon": "res://assets/generated/paper_icon_man_smoke.png"},
+	{"id": "man_drink", "name": "喝茶缸", "description": "端出90年代的搪瓷缸喝口水", "icon": "res://assets/generated/paper_icon_man_drink.png"},
 	{"id": "man_pet_cat", "name": "摸摸小猫", "description": "弯腰抚摸小猫", "icon": "res://assets/generated/paper_icon_man_pet_cat.png"},
-	{"id": "man_pager", "name": "BB机来讯", "description": "腰间BB机响起", "icon": "res://assets/generated/paper_icon_man_pager.png"},
 	{"id": "man_doze", "name": "冰箱人打盹", "description": "站着打起了瞌睡", "icon": "res://assets/generated/paper_icon_man_doze.png"},
-	# 猫嘴里的动画: the two performances the cat's bag gained later are on the 骨架 page too, wearing the
-	# mouth items' own logos. Clicking one previews it - see their cases in _on_fridge_gallery_entry_pressed.
-	{"id": "man_cassette", "name": "磁带机舞", "description": "扛着录音机跳舞", "icon": "res://assets/generated/paper_icon_cassette.png"},
-	{"id": "man_tv", "name": "渔民垂钓", "description": "划着乌篷船垂钓", "icon": "res://assets/generated/paper_icon_crt.png"},
+	# ⚠ 猫嘴物品的动画图标删掉: 磁带机舞 and 渔民垂钓 used to be duplicated here, wearing the mouth items'
+	# own logos. They are gone from this page - their animations are played by clicking the ITEM on the
+	# 猫嘴物品 page instead (see _play_fridge_mouth_item_preview), so nothing is listed twice.
 	{"id": "cat_rest_stand", "name": "小猫歇息", "description": "原地伸展身体", "icon": "res://assets/generated/paper_icon_cat_rest_stand.png"},
 	{"id": "cat_doze", "name": "小猫打盹", "description": "眯眼慢慢睡着", "icon": "res://assets/generated/paper_icon_cat_doze.png"},
 	{"id": "cat_play_ball", "name": "小猫玩球", "description": "追着毛线球打转", "icon": "res://assets/generated/paper_icon_cat_play_ball.png"},
@@ -235,11 +293,17 @@ const FRIDGE_GALLERY_ENTRIES := [
 ## Idle ("待机") rotations: while the level is idle the fridge man and the cat
 ## occasionally play one of these animations on their own. `pet_cat` and `run`
 ## also move the cat (see _start_fridge_pet_cat / _start_fridge_cat_orbit).
-const FRIDGE_IDLE_MAN_ACTIONS := ["rest_stand", "smoke", "pet_cat"]
+## 待机: the man's ambient bits. ⚠ 打瞌睡 (doze) is one of them now - whenever he is NOT running a
+## cat-mouth item's animation he stands, dozes off, smokes or pets the cat
+## (「冰箱爷爷在没有执行任何小猫嘴里的物品对应动画时，待机动画除了站立，还有打瞌睡」). Its duration is
+## 13 s because a doze is a whole arc (stand, nod, sleep, pop, startle) - see FRIDGE_IDLE_ACTION_DURATIONS.
+const FRIDGE_IDLE_MAN_ACTIONS := ["rest_stand", "doze", "smoke", "drink", "pet_cat"]
 const FRIDGE_IDLE_CAT_ACTIONS := ["rest_stand", "play_ball", "run"]
 const FRIDGE_IDLE_ACTION_DURATIONS := {
 	"rest_stand": 7.0,
 	"smoke": 7.5,
+	# 喝茶缸: raise the mug, a long sip, lower it - the ping-ponged 3-pose atlas reads as sipping again.
+	"drink": 7.0,
 	"pet_cat": 6.0,
 	"play_ball": 7.0,
 	# 打瞌睡 is a whole doze arc (stand, nod, sleep, pop, startle). The cat stands
@@ -309,32 +373,44 @@ const FRIDGE_PET_CAT_OFFSET := Vector2(96.0, -12.0)
 ## dropdown (下拉选择) so the list can keep growing.
 const FRIDGE_BOX_ENTRIES := [
 	{
-		"id": "tomato",
+		# ⚠ juggle_tomato, NOT "tomato": a 公文包 item is unlocked by its id, and the id "tomato" already
+		# means the 番茄钟 countdown item - sharing it would make the two indistinguishable (the 番茄钟 mouth
+		# item would be treated as a box item and vice versa). _on_fridge_box_entry_pressed maps this id back
+		# onto the juggle projectile "tomato".
+		"id": "juggle_tomato",
 		"name": "番茄",
+		"description": "抛球杂耍时使用的番茄道具",
 		"icon": "res://assets/generated/paper_tomato_projectile.png",
 		"action_icon": "res://assets/generated/paper_skeleton_juggle_icon.png",
 		"action_name": "抛球杂耍",
+		"requires": "tomato",
 	},
 	{
 		"id": "ball",
 		"name": "球",
+		"description": "抛球杂耍时可切换的彩球道具",
 		"icon": "res://assets/generated/paper_juggle_ball.png",
 		"action_icon": "res://assets/generated/paper_skeleton_juggle_icon.png",
 		"action_name": "抛球杂耍",
+		"requires": "tomato",
 	},
 	{
 		"id": "spray_text",
 		"name": "字体",
+		"description": "BB机悬浮时向下喷洒的纸片文字",
 		"icon": "res://assets/generated/paper_icon_spray_text.png",
 		"action_icon": "res://assets/generated/paper_icon_man_pager.png",
 		"action_name": "BB机来讯",
+		"requires": "pager",
 	},
 	{
 		"id": "spray_bubble",
 		"name": "泡泡",
+		"description": "BB机悬浮时可切换的漫天泡泡",
 		"icon": "res://assets/generated/paper_icon_spray_bubble.png",
 		"action_icon": "res://assets/generated/paper_icon_man_pager.png",
 		"action_name": "BB机来讯",
+		"requires": "pager",
 	},
 	# 猫嘴里的动画: the two items the cat's bag gained later are listed here too, a page further along
 	# the lid's row. 只留图标 means the lid carries the MOUTH ITEM's own logo (the 磁带机 tape and the
@@ -343,16 +419,38 @@ const FRIDGE_BOX_ENTRIES := [
 	{
 		"id": "cassette_note",
 		"name": "音乐符号",
+		"description": "磁带机蹦迪时飞出的纸片音符",
 		"icon": "res://assets/generated/paper_icon_music_note.png",
 		"action_icon": "res://assets/generated/paper_icon_cassette.png",
 		"action_name": "磁带机",
+		"requires": "cassette",
 	},
 	{
 		"id": "tv_boat",
 		"name": "乌篷船",
+		"description": "显像管电视专注时乘坐的江南乌篷船",
 		"icon": "res://assets/generated/paper_icon_boat.png",
 		"action_icon": "res://assets/generated/paper_icon_crt.png",
 		"action_name": "电视机",
+		"requires": "crt",
+	},
+	{
+		"id": "hearthstone",
+		"name": "炉石",
+		"description": "复古电脑专注结束时兽人用来回到电脑里的炉石传送石",
+		"icon": "res://assets/generated/paper_icon_hearthstone.png",
+		"action_icon": "res://assets/generated/paper_icon_computer.png",
+		"action_name": "90年代电脑",
+		"requires": "computer",
+	},
+	{
+		"id": "mario_cartridge",
+		"name": "超级玛丽奥卡带",
+		"description": "游戏机手柄专注时插入学习机的超级玛丽奥卡带",
+		"icon": "res://assets/generated/paper_icon_mario_hat.png",
+		"action_icon": "res://assets/generated/paper_icon_controller.png",
+		"action_name": "游戏机手柄",
+		"requires": "controller",
 	},
 ]
 
@@ -551,8 +649,37 @@ var fridge_box: Node2D
 var fridge_box_panel: PanelContainer
 # The prop box entry in hand; its card is highlighted in the panel.
 var fridge_box_selected_id := "tomato"
+## 中英文切换: the language the whole game's text is shown in - "zh" or "en" (see FridgeStrings, and the
+## two cards on the notebook's 骨架 page). It rides the save, so a player who picks English gets English
+## again on the next launch.
+var fridge_language := FridgeStrings.LANGUAGE_ZH
 var fridge_coin_count := 0
 var fridge_owned_items: Array[String] = [FRIDGE_DEFAULT_VARIANT_ID]
+## 解锁进度: the 待机动画 cards the player has unlocked (see _sync_fridge_idle_anims) and the items the
+## cat's mouth currently holds (see _roll_fridge_mouth_items). Both ride the save.
+var fridge_unlocked_anims: Array[String] = []
+var fridge_mouth_items: Array[String] = []
+## 每天保底: the calendar day (YYYY-MM-DD) the daily draw counters belong to. When the date turns over,
+## the refreshes start counting from zero again and the unowned bonus resets (see _fridge_sync_draw_day).
+## It rides the save.
+var fridge_refresh_day := ""
+## 抽奖计数: how many refreshes have been made today (drives the 前三次保底). Rides the save.
+var fridge_daily_draws := 0
+## 公文包物品: the 公文包's swappable interaction items (FRIDGE_BOX_ENTRIES) the cat's mouth has unlocked.
+## They are drawn from the lottery ONCE and kept forever - no count, no spending - so a cell becomes
+## pickable the moment its item has been found (see _roll_fridge_mouth_items). Rides the save.
+var fridge_box_unlocked: Array[String] = []
+## 未解锁过的新物品: the ids the last refresh has just handed the player (a new 猫嘴物品 / 公文包物品 / 待机动画),
+## so their balls can flash their icon background (see FridgeYarnBall.set_new_find). Cleared once the balls
+## have been rebuilt from it.
+var fridge_mouth_new_ids: Array[String] = []
+## 删除存档后初始化: whether the live save file was there the last time the level looked. A player who
+## deletes the save (from Explorer, while the game is running) expects the game to start over - but this
+## instance holds the old progress in memory and would write it straight back, so the level watches the
+## file and re-initialises the moment it disappears.
+const FRIDGE_SAVE_WATCH_INTERVAL := 0.5
+var fridge_save_seen := false
+var fridge_save_watch_timer := 0.0
 var fridge_active_item_id := FRIDGE_DEFAULT_VARIANT_ID
 var fridge_phase := "idle"
 var fridge_time_left := 0.0
@@ -576,6 +703,9 @@ var fridge_screen_flash_time := 0.0
 
 
 func _ready() -> void:
+	# 中英文切换: the table has to exist BEFORE the first Label is built, because every Control
+	# translates its own text with it (see FridgeStrings).
+	FridgeStrings.install()
 	set_process(true)
 	world = Node2D.new()
 	world.name = "World"
@@ -610,6 +740,8 @@ func _process(delta: float) -> void:
 	_update_fridge_box_disguise()
 	_update_fridge_idle(delta)
 	_update_fridge_spray()
+	# 删除存档后初始化: notices a save file deleted from under a running game.
+	_update_fridge_save_watch(delta)
 
 
 func _update_fridge_player_form() -> void:
@@ -745,6 +877,25 @@ func _update_fridge_player_flight(delta: float) -> void:
 			boat_position.x = boat_left + FRIDGE_BOAT_LEFT_MARGIN
 			fridge_player_flight_dir = 1.0
 		fridge_player.global_position = boat_position
+	elif bool(fridge_player.call("is_computer_spinning")):
+		# 复古电脑 (搏击过程中，要有位移，从屏幕的一边打到另外一边): the boxing pair brawls back and forth
+		# across the screen from one side to the other, bouncing off the screen edges (with extra left
+		# margin so the Computer Man at x=-148 stays fully inside the left edge)!
+		if not fridge_player_flight_has_origin:
+			fridge_player_flight_origin = fridge_player.global_position
+			fridge_player_flight_has_origin = true
+		var spin_position: Vector2 = fridge_player.global_position
+		spin_position.x += (FRIDGE_DANCE_SPEED * 1.25) * fridge_player_flight_dir * delta
+		var spin_screen: Rect2 = _fridge_screen_world_rect()
+		var spin_left: float = spin_screen.position.x + 150.0
+		var spin_right: float = spin_screen.position.x + spin_screen.size.x
+		if spin_position.x + FRIDGE_FLIGHT_HALF_WIDTH > spin_right:
+			spin_position.x = spin_right - FRIDGE_FLIGHT_HALF_WIDTH
+			fridge_player_flight_dir = -1.0
+		elif spin_position.x - FRIDGE_FLIGHT_HALF_WIDTH < spin_left:
+			spin_position.x = spin_left + FRIDGE_FLIGHT_HALF_WIDTH
+			fridge_player_flight_dir = 1.0
+		fridge_player.global_position = spin_position
 	elif fridge_player_flight_has_origin:
 		# 回到地面: the levitation is over, so let him sink back to his take-off spot.
 		var target: Vector2 = fridge_player_flight_origin
@@ -765,7 +916,8 @@ func _flip_fridge_player_flight_dir() -> void:
 		return
 	var pager_flying: bool = bool(fridge_player.call("is_pager_flying"))
 	var dancing: bool = bool(fridge_player.call("is_cassette_dancing"))
-	if not pager_flying and not dancing:
+	var spinning: bool = bool(fridge_player.call("is_computer_spinning"))
+	if not pager_flying and not dancing and not spinning:
 		return
 	fridge_player_flight_dir = -fridge_player_flight_dir
 
@@ -844,8 +996,9 @@ func _build_level() -> void:
 	world.add_child(visual)
 
 	_load_fridge_progress()
-	# 全部解锁: every item is owned from the start (see _ensure_all_fridge_items_owned).
-	_ensure_all_fridge_items_owned()
+	# 解锁进度: what the player owns and what they have unlocked comes from the save - a NEW save starts
+	# empty (only the starter tomato) and fills up as the cat's mouth deals items, while a save written
+	# before this system existed is topped up to everything inside _apply_fridge_progress.
 	_spawn_fridge_player()
 	_spawn_fridge_cat_pet()
 	_spawn_fridge_gallery_stand()
@@ -1044,11 +1197,9 @@ func _create_fridge_item_toolbar() -> void:
 	fridge_yarn_pile.mouse_filter = Control.MOUSE_FILTER_PASS
 	content.add_child(fridge_yarn_pile)
 
-	for i in FRIDGE_ITEMS.size():
-		# 猫嘴里去掉: skip the items that are not mouth items - no ball for them.
-		if not _is_fridge_mouth_item(str(FRIDGE_ITEMS[i].get("id", ""))):
-			continue
-		_create_fridge_yarn_ball(FRIDGE_ITEMS[i], i)
+	# 解锁进度: only the items the DEAL put in the cat's mouth get a ball - on a new save that is an empty
+	# mouth until the nose is clicked (see _roll_fridge_mouth_items).
+	_rebuild_fridge_mouth_balls()
 
 	# Over the painted nose: hover blushes it red; clicking re-deals the balls.
 	fridge_nose_button = FridgeCatNoseScript.new()
@@ -1171,7 +1322,7 @@ func _create_fridge_gallery_panel() -> void:
 	# pocket cell art are the gallery's own, everything else is the panel's default (cream
 	# paper board + stars, 下拉查看更多). The 标题 is dropped, and the panel shows NO scroll
 	# slider at all (the mouse wheel still pulls the list down).
-	fridge_gallery_panel.call("setup", FRIDGE_GALLERY_TITLE, FRIDGE_GALLERY_ENTRIES, {
+	fridge_gallery_panel.call("setup", FRIDGE_GALLERY_TITLE, _fridge_skeleton_entries(), {
 		# 摊开的书: the notebook's panel IS the book - the items print straight on its cream
 		# pages (a 2-wide grid of big cells, no cell artwork), with the bookmark ribbons tucked
 		# into the top right corner. The cell/icon sizes are picked so the panel lands on the
@@ -1190,6 +1341,11 @@ func _create_fridge_gallery_panel() -> void:
 		# 文字说明: a tighter cell inset leaves room for the icon without growing the card (and with
 		# it the whole book) any further.
 		"cell_margin": 10.0,
+		# ⚠ 同一尺寸: every page is padded up to the TALLEST page's row count (the 骨架 page's 11 entries over
+		# 2 columns = 6 rows - it grew by the two 中英文切换 cards), so opening 猫嘴物品 or 进度 never
+		# shrinks the notebook
+		# (「打开的小红书尺寸应该和其他分页一样」). The padding cells are invisible - `cell_texture` is none.
+		"grid_min_rows": 6,
 		"show_title": false,
 		# 底部那段提示: the 下拉查看更多 line is dropped (the wheel still pulls the list down).
 		"show_hint": false,
@@ -1198,11 +1354,17 @@ func _create_fridge_gallery_panel() -> void:
 		# fading in and out (若隐若现) - and only while there is another page below.
 		"scroll_arrow": true,
 		"tabs": [
-			{"id": FRIDGE_GALLERY_TAB_SKELETON, "name": "骨架", "labels": false, "entries": FRIDGE_GALLERY_ENTRIES},
+			{"id": FRIDGE_GALLERY_TAB_SKELETON, "name": "骨架", "labels": false, "entries": _fridge_skeleton_entries()},
 			{"id": FRIDGE_GALLERY_TAB_ITEMS, "name": "猫嘴物品", "labels": false, "entries": _fridge_unlocked_item_entries()},
+			# 公文包物品: shows the already-unlocked briefcase items and their hover descriptions.
+			{"id": FRIDGE_GALLERY_TAB_BOX, "name": "公文包物品", "labels": false, "entries": _fridge_unlocked_box_item_entries(), "active_tint": Color(0.32, 0.56, 0.86, 1.0)},
+			# 进度: placed at the bottom of the right-hand bookmark column ("把小红书的存档页签放到最下面").
+			{"id": FRIDGE_GALLERY_TAB_PROGRESS, "name": "进度", "labels": false, "entries": _fridge_progress_entries(), "active_tint": Color(0.70, 0.15, 0.14, 1.0)},
 		],
 	})
 	fridge_gallery_panel.entry_pressed.connect(_on_fridge_gallery_entry_pressed)
+	# 存档位: a slot card's own 读取 / 重置 buttons (see _build_entry_row in the panel).
+	fridge_gallery_panel.entry_button_pressed.connect(_on_fridge_gallery_entry_button_pressed)
 	# 分页: a page can be a different height, so the panel is re-placed after every switch.
 	fridge_gallery_panel.tab_changed.connect(_on_fridge_gallery_tab_changed)
 
@@ -1229,15 +1391,251 @@ func _fridge_unlocked_item_entries() -> Array:
 	return entries
 
 
-## 悬停说明框: the item's own 描述 with its 持续时间 appended, so the hover box reads
+## 公文包物品: every already-unlocked briefcase item as one card on the notebook's 公文包物品 page,
+## so hovering it pops the paper 说明框 with its name and description (no `action_icon` is included here,
+## so the book renders a plain 2-column grid of icons just like 猫嘴物品).
+func _fridge_unlocked_box_item_entries() -> Array:
+	var entries: Array = []
+	for entry: Dictionary in FRIDGE_BOX_ENTRIES:
+		var box_id := str(entry.get("id", ""))
+		if box_id.is_empty() or not _is_fridge_box_unlocked(box_id):
+			continue
+		entries.append({
+			"id": "box_%s" % box_id,
+			"name": str(entry.get("name", box_id)),
+			"description": FridgeStrings.t(str(entry.get("description", ""))),
+			"icon": str(entry.get("icon", "")),
+		})
+	return entries
 ## "名称" / "描述 · 30 秒" (or just the duration when the item has no description).
+## 猫嘴物品的互动动画: clicking an item's icon on the notebook's 猫嘴物品 page plays that item's animation
+## for its own configured duration (`_get_fridge_item_duration(item_id)`: 番茄钟 1 分钟, 磁带机 2 分钟,
+## 寻呼机 3 分钟, 显像管电视 4 分钟, or `fridge_work_duration`), instead of a short one-shot preview
+## ("小红书里 番茄钟动画播放的时间改成对应的设置的时间，不要只播放一次").
+func _play_fridge_mouth_item_preview(item_id: String) -> void:
+	if fridge_player == null or not is_instance_valid(fridge_player):
+		return
+	if not fridge_owned_items.has(item_id):
+		return
+	var duration := _get_fridge_item_duration(item_id)
+	# Keep the idle rotation quiet for the whole configured duration.
+	fridge_idle_suppress = duration + 1.0
+	# 只播放一个: the clicked animation REPLACES whatever he was already doing - 「抛球动画播放时，在小红书里点击
+	# 其他动画播放，抛球还在播放」. stop_performances() clears every timed preview (the juggle and its flying
+	# props included), so nothing keeps running behind the new one.
+	fridge_player.call("stop_performances")
+	match item_id:
+		"tomato":
+			# 抛球杂耍 with the tomato itself, like the countdown does.
+			fridge_player.call("set_juggle_projectile", "tomato")
+			fridge_player.call("play_juggle_preview", duration)
+		"pager":
+			# BB机: the levitation, running for the item's full configured duration.
+			fridge_player.call("play_pager_preview", duration)
+		"cassette":
+			# 磁带机: the boombox dance, running for the item's full configured duration.
+			fridge_player.call("play_cassette_preview", duration)
+		"crt":
+			# 电视机: the fisherman poling his 乌篷船, running for the item's full configured duration.
+			fridge_player.call("play_tv_preview", duration)
+		"computer":
+			# 复古电脑: orc warrior armor + dual battle axes, running for the item's full configured duration.
+			fridge_player.call("play_computer_preview", duration)
+		"controller":
+			# 游戏机手柄: Super Mario-style plumber jumping on a brick platform with a growing mushroom.
+			fridge_player.call("play_controller_preview", duration)
+
+
 func _fridge_item_description(item: Dictionary) -> String:
 	var item_id := str(item.get("id", ""))
 	var description := str(item.get("description", ""))
+	# ⚠ 中英文切换: a composite like "基础待机动画 · 30 秒" is NOT a translation key, so each piece is
+	# translated here and the two are joined. _format_fridge_duration already returns a translated string.
 	var duration_text := _format_fridge_duration(_get_fridge_item_duration(item_id))
 	if description.is_empty():
 		return duration_text
-	return "%s · %s" % [description, duration_text]
+	return "%s · %s" % [FridgeStrings.t(description), duration_text]
+
+
+## 进度: the third page is a pair of ACTIONS rather than a list of animations - one card SAVES the
+## progress and the other READS it back (see _on_fridge_gallery_entry_pressed). Each card's 悬停说明框
+## spells out what the save file holds, so nothing has to be guessed before a click.
+func _fridge_progress_entries() -> Array:
+	var entries: Array = []
+	for index in FRIDGE_SAVE_SLOT_COUNT:
+		var slot: int = index + 1
+		entries.append({
+			"id": _fridge_slot_entry_id(slot),
+			"name": FridgeStrings.t("存档 %d") % slot,
+			"description": _fridge_slot_summary(slot),
+			# 图标随状态变: 有存档 -> 开心的冰箱老头（只有头部）, 空档 -> 打瞌睡的头.
+			"icon": _fridge_slot_logo(slot),
+			# ⚠ 小字去掉: the slot card carries NO text under its icon - it is icon-only like every other
+			# cell on the book's pages, and its 名称 / 存档内容 ride the 悬停说明框 instead.
+			# The two buttons sit at the RIGHT of the slot: 读取 / 重置 (see entry_button_pressed).
+			# ⚠ 重置 (was 删除): the second button means "start the game over", including from an EMPTY
+			# slot - the player reads the whole page as "my saves", so clearing it must reset the live game.
+			"buttons": [
+				{"id": "load", "text": "读取"},
+				{"id": "delete", "text": "重置", "danger": true},
+			],
+		})
+	return entries
+
+
+## 存档位: the entry id a slot's card carries. A click on the card itself SAVES into that slot
+## (see _on_fridge_gallery_entry_pressed); the card's own buttons load and delete it.
+func _fridge_slot_entry_id(slot: int) -> String:
+	return "slot_%d" % slot
+
+
+func _fridge_slot_path(slot: int) -> String:
+	return FRIDGE_SAVE_SLOT_PATH % slot
+
+
+## 图标随状态变: the HAPPY grandpa head once the slot holds a save, the DOZING (打瞌睡) head while it is
+## still empty - so the page reads at a glance as "which of my three slots has something in it".
+func _fridge_slot_logo(slot: int) -> String:
+	return FRIDGE_SLOT_SAVED_LOGO if FileAccess.file_exists(_fridge_slot_path(slot)) else FRIDGE_SLOT_EMPTY_LOGO
+
+
+## 存档内容: what a slot holds, or that it is empty - the slot's hover 说明框 prints this under its name
+## ("已经解锁的番茄钟动画数量、可交互物品数量、待机动画数量").
+func _fridge_slot_summary(slot: int) -> String:
+	var path := _fridge_slot_path(slot)
+	if not FileAccess.file_exists(path):
+		return "空存档 · 点一下保存"
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return "存档无法读取"
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return "存档无法读取"
+	var data: Dictionary = parsed
+	var pomodoro_count := 0
+	for item: Variant in data.get("owned_items", []):
+		if _is_fridge_mouth_item(str(item)):
+			pomodoro_count += 1
+	var box_seen: Array[String] = []
+	for box_id: Variant in data.get("box_unlocked", []):
+		var stored_id := str(box_id)
+		if _is_fridge_box_item(stored_id) and not box_seen.has(stored_id):
+			box_seen.append(stored_id)
+	var legacy_box: Variant = data.get("box_items", {})
+	if legacy_box is Dictionary:
+		for key: Variant in (legacy_box as Dictionary).keys():
+			var legacy_id := str(key)
+			if _is_fridge_box_item(legacy_id) and int((legacy_box as Dictionary)[key]) > 0 \
+					and not box_seen.has(legacy_id):
+				box_seen.append(legacy_id)
+	var box_count := box_seen.size()
+	var anim_count := 0
+	var valid_anims := _fridge_idle_anim_ids()
+	if data.has("anims"):
+		var anim_seen: Array[String] = []
+		for anim_id: Variant in data.get("anims", []):
+			var wanted_anim := str(anim_id)
+			if valid_anims.has(wanted_anim) and not anim_seen.has(wanted_anim):
+				anim_seen.append(wanted_anim)
+		anim_count = anim_seen.size()
+	else:
+		anim_count = valid_anims.size()
+	return FridgeStrings.t("番茄钟动画 %d 个 · 可交互物品 %d 个 · 待机动画 %d 个") % [
+		pomodoro_count, box_count, anim_count]
+
+
+## The 公文包 action a chosen item belongs to (see FRIDGE_BOX_ENTRIES), for the summaries above.
+func _get_fridge_box_action_name(entry_id: String) -> String:
+	# 中英文切换: callers join this into a composite ("… · 猫嘴物品 N 个 · <this>"), which a Label cannot
+	# translate on its own - so the name is translated here, where every caller gets it.
+	for entry: Dictionary in FRIDGE_BOX_ENTRIES:
+		if str(entry.get("id", "")) == entry_id:
+			return FridgeStrings.t(str(entry.get("action_name", "抛球杂耍")))
+	return FridgeStrings.t("抛球杂耍")
+
+
+## 保存进度: a click on a slot's CARD writes the CURRENT state into that slot. Quiet action - it neither
+## starts a preview nor suppresses the idle rotation.
+func _save_fridge_progress_to_slot(slot: int) -> void:
+	_write_fridge_save_file(_fridge_slot_path(slot))
+	_show_fridge_progress_toast(FridgeStrings.t("已保存到存档 %d") % slot)
+	_refresh_fridge_progress_tab()
+
+
+## 自动保存进度: called whenever a new 待机动画, 可交互物品 or 番茄钟动画 is unlocked. Always saves the live
+## progress (`_save_fridge_progress`) AND auto-saves to a save slot on the 进度 page:
+##   - if there are multiple slots with progress, or no slots with progress yet, it defaults to Slot 1 (`slot_1`);
+##   - if exactly one slot has progress, it auto-saves into that slot;
+##   - all other slots are left untouched unless the player clicks them to save manually.
+func _auto_save_fridge_on_unlock() -> void:
+	_save_fridge_progress()
+	var non_empty_slots: Array[int] = []
+	for index in FRIDGE_SAVE_SLOT_COUNT:
+		var slot: int = index + 1
+		if FileAccess.file_exists(_fridge_slot_path(slot)):
+			non_empty_slots.append(slot)
+	var target_slot: int = 1
+	if non_empty_slots.size() == 1:
+		target_slot = non_empty_slots[0]
+	_write_fridge_save_file(_fridge_slot_path(target_slot))
+	_refresh_fridge_progress_tab()
+
+
+## 读取存档: puts the whole game back where that slot says it was - the unlocked 猫嘴物品 (the mouth balls
+## are REBUILT from the loaded list), the 公文包's actions, the unlocked 待机动画 cards, the timers - and
+## re-arms the 公文包 panel. ⚠ The loaded state is written to the LIVE auto-save as well, so the game in
+## front of the player and the one a restart comes up with are the same thing (and 重置 then really does
+## start over).
+func _load_fridge_progress_from_slot(slot: int) -> void:
+	if not _read_fridge_save_file(_fridge_slot_path(slot)):
+		_show_fridge_progress_toast(FridgeStrings.t("存档 %d 是空的") % slot)
+		return
+	_rebuild_fridge_mouth_balls()
+	_refresh_fridge_ui()
+	_refresh_fridge_yarn_balls()
+	_refresh_fridge_collection_pages()
+	if fridge_box_panel != null and is_instance_valid(fridge_box_panel):
+		fridge_box_panel.call("set_selected", fridge_box_selected_id)
+	_save_fridge_progress()
+	_show_fridge_progress_toast(FridgeStrings.t("已读取存档 %d") % slot)
+	_refresh_fridge_progress_tab()
+
+
+## 重置存档: clears the slot's file (if it has one) AND starts the game over. ⚠ 重置 means "I want a clean
+## game" to the player, so the RUNNING session is reset every time this runs - even when the slot was
+## ALREADY EMPTY (「清空了所有存档，但是小红书和公文包里解锁动画、物品的记录没有清空」: the old code toasted
+## and did nothing for an empty slot, so clearing empty slots left the whole game intact). Removing only
+## THIS slot's file leaves the player's other saves alone; the LIVE auto-save goes too, otherwise a
+## restart would bring every unlock back.
+func _delete_fridge_progress_slot(slot: int) -> void:
+	var path := _fridge_slot_path(slot)
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	_reset_fridge_progress_to_fresh_save(true)
+	_show_fridge_progress_toast(FridgeStrings.t("已重置存档 %d，游戏已重置") % slot)
+	_refresh_fridge_progress_tab()
+
+
+## 存档位按钮: 读取 / 重置 arrive here from a slot card's own buttons (the card's click saves instead).
+func _on_fridge_gallery_entry_button_pressed(entry_id: String, button_id: String) -> void:
+	if not entry_id.begins_with("slot_"):
+		return
+	var slot := int(entry_id.trim_prefix("slot_"))
+	if slot < 1 or slot > FRIDGE_SAVE_SLOT_COUNT:
+		return
+	if button_id == "load":
+		_load_fridge_progress_from_slot(slot)
+	elif button_id == "delete":
+		_delete_fridge_progress_slot(slot)
+
+
+## 分页: the 进度 page describes the CURRENT state and the save file's, so it is rebuilt whenever the
+## book is opened or the progress changes under it.
+func _refresh_fridge_progress_tab() -> void:
+	if fridge_gallery_panel == null or not is_instance_valid(fridge_gallery_panel):
+		return
+	fridge_gallery_panel.call("update_tab_entries", FRIDGE_GALLERY_TAB_PROGRESS, _fridge_progress_entries())
 
 
 func _on_fridge_gallery_tab_changed(_tab_id: String) -> void:
@@ -1333,10 +1731,17 @@ func _fridge_sprite_art_rect(sprite: Node2D, texture: Texture2D) -> Rect2:
 	# named `xform`, not `transform`: a local called `transform` shadows Node2D's own property.
 	var xform := sprite.get_global_transform()
 	var art_scale: Vector2 = xform.get_scale()
+	var tex_size: Vector2 = texture.get_size()
+	if sprite is Sprite2D:
+		var plain_frame := sprite as Sprite2D
+		if plain_frame.hframes > 1:
+			tex_size.x /= float(plain_frame.hframes)
+		if plain_frame.vframes > 1:
+			tex_size.y /= float(plain_frame.vframes)
 	# ⚠ ABS: a MIRRORED sprite (negative x scale - the TV performance's boat is drawn flipped) otherwise
 	# produced a Rect2 with a NEGATIVE size, which Godot rejects ("Rect2 size is negative...") every frame and
 	# which left the mirrored art outside the click-through region.
-	var size: Vector2 = (texture.get_size() * art_scale).abs()
+	var size: Vector2 = (tex_size * art_scale).abs()
 	var top_left: Vector2 = xform.origin
 	if sprite is Sprite2D:
 		var plain := sprite as Sprite2D
@@ -1365,7 +1770,8 @@ func desktop_pet_hit_rects() -> Array[Rect2]:
 	# (「在冰箱爷爷变成小盒子的状态下，鼠标拖拽 会变成白色」). While a drag is actually MOVING, the region is
 	# therefore pinned to the WHOLE window in one step; the tight region comes back on release, and even if the
 	# release event never arrives the pin ages out after FRIDGE_DRAG_REGION_HOLD frames with no drag step.
-	if fridge_player_is_dragging and _is_fridge_drag_region_pinned():
+	if (fridge_player_is_dragging and _is_fridge_drag_region_pinned()) \
+			or (fridge_player != null and is_instance_valid(fridge_player) and bool(fridge_player.call("is_dragging_computer_loot"))):
 		rects.append(Rect2(Vector2.ZERO, Vector2(get_viewport_rect().size)))
 		return rects
 	for actor: Node in [fridge_player, fridge_cat_pet, fridge_gallery_stand, fridge_box]:
@@ -1538,21 +1944,47 @@ func _on_fridge_gallery_stand_toggled(open: bool) -> void:
 	# 分页: the 猫嘴物品 page lists what is unlocked, so it is refreshed on every open (an
 	# unlock while the panel was closed then shows up), and the panel is re-placed after the
 	# rebuild in case the page's height changed.
+	# 待机动画: the first page grows the same way - one card per three collected items.
+	fridge_gallery_panel.call("update_tab_entries", FRIDGE_GALLERY_TAB_SKELETON, _fridge_skeleton_entries())
 	fridge_gallery_panel.call("update_tab_entries", FRIDGE_GALLERY_TAB_ITEMS, _fridge_unlocked_item_entries())
+	fridge_gallery_panel.call("update_tab_entries", FRIDGE_GALLERY_TAB_BOX, _fridge_unlocked_box_item_entries())
+	# 进度: the same for the third page - its two cards stamp the CURRENT state and the save file's time.
+	_refresh_fridge_progress_tab()
 	fridge_gallery_panel.visible = open
 	if open and fridge_gallery_stand != null and is_instance_valid(fridge_gallery_stand):
 		fridge_gallery_panel.call("popup_at", _fridge_gallery_popup_position())
 
 
 func _on_fridge_gallery_entry_pressed(entry_id: String) -> void:
-	# 猫嘴物品: the second tab's cards only show what is unlocked in the cat's mouth - a click
-	# on one is informational and must not disturb the idle rotation or start a performance.
+	# 猫嘴物品: a click on an unlocked item's own icon plays THAT item's fridge-man interactive
+	# animation - the same performance its countdown runs (see _play_fridge_mouth_item_preview).
 	if entry_id.begins_with("item_"):
+		_play_fridge_mouth_item_preview(entry_id.trim_prefix("item_"))
+		return
+	# 公文包物品: a card on the 公文包物品 page is for reading its hover 说明框, so a click does not
+	# disturb the idle rotation.
+	if entry_id.begins_with("box_"):
+		return
+	# 中英文切换: these two cards switch the game's language; they sit before the animation match because
+	# they are settings rather than performances (no preview, no idle-rotation disturbance).
+	if entry_id == FRIDGE_LANG_ZH_ENTRY_ID:
+		_set_fridge_language(FridgeStrings.LANGUAGE_ZH)
+		return
+	if entry_id == FRIDGE_LANG_EN_ENTRY_ID:
+		_set_fridge_language(FridgeStrings.LANGUAGE_EN)
 		return
 	# 第一个图标: the Discord card is a LINK rather than a performance - a click opens the invite in the
 	# player's browser and no animation runs, so the idle rotation is left alone.
 	if entry_id == "discord":
 		OS.shell_open(FRIDGE_DISCORD_URL)
+		return
+	# 进度: a click on a save slot's CARD writes the current state into that slot. Quiet action too - handled
+	# before the animation match, so it disturbs neither the idle rotation nor a countdown in flight. The
+	# slot's own 读取 / 重置 buttons arrive on entry_button_pressed instead.
+	if entry_id.begins_with("slot_"):
+		var slot_number := int(entry_id.trim_prefix("slot_"))
+		if slot_number >= 1 and slot_number <= FRIDGE_SAVE_SLOT_COUNT:
+			_save_fridge_progress_to_slot(slot_number)
 		return
 	# Each gallery entry maps to an animation the fridge man or the cat performs.
 	# A manual preview also keeps the idle rotation quiet for its whole length.
@@ -1561,31 +1993,20 @@ func _on_fridge_gallery_entry_pressed(entry_id: String) -> void:
 	# idle business (see FridgePomodoroPlayer.play_juggle_preview).
 	fridge_idle_suppress = FRIDGE_GALLERY_PREVIEW_DURATION + 1.0
 	match entry_id:
-		"juggle":
-			if fridge_player != null and is_instance_valid(fridge_player):
-				fridge_player.call("play_juggle_preview", FRIDGE_GALLERY_PREVIEW_DURATION)
 		"man_rest_stand":
 			_play_fridge_man_idle_action("rest_stand")
 		"man_smoke":
 			_play_fridge_man_idle_action("smoke")
+		"man_drink":
+			_play_fridge_man_idle_action("drink")
 		"man_pet_cat":
 			_play_fridge_man_idle_action("pet_cat")
-		"man_pager":
-			fridge_idle_suppress = FRIDGE_PAGER_PREVIEW_DURATION + 1.0
-			if fridge_player != null and is_instance_valid(fridge_player):
-				fridge_player.call("play_pager_preview", FRIDGE_PAGER_PREVIEW_DURATION)
+		# ⚠ juggle / man_pager / man_cassette / man_tv are gone from this page: those four performances are the
+		# cat's MOUTH items' animations, played by clicking the item's own icon on the 猫嘴物品 page - see
+		# _play_fridge_mouth_item_preview, which owns the item -> preview mapping.
 		"man_doze":
 			fridge_idle_suppress = _fridge_idle_action_duration("doze") + 1.0
 			_play_fridge_man_idle_action("doze")
-		"man_cassette":
-			# 磁带机: the boombox dance the cat's bag unlocks - the same performance its 2 分钟 round
-			# plays (see FridgePomodoroPlayer.play_cassette_preview).
-			if fridge_player != null and is_instance_valid(fridge_player):
-				fridge_player.call("play_cassette_preview", FRIDGE_GALLERY_PREVIEW_DURATION)
-		"man_tv":
-			# 电视机: the fisherman poling his 乌篷船 (see play_tv_preview).
-			if fridge_player != null and is_instance_valid(fridge_player):
-				fridge_player.call("play_tv_preview", FRIDGE_GALLERY_PREVIEW_DURATION)
 		"cat_rest_stand":
 			_play_fridge_cat_idle_action("rest_stand")
 		"cat_doze":
@@ -1597,6 +2018,39 @@ func _on_fridge_gallery_entry_pressed(entry_id: String) -> void:
 			_start_fridge_cat_orbit(FRIDGE_CAT_ORBIT_DURATION)
 		_:
 			pass
+
+
+## 中英文切换: flip the whole game's text between 中文 and English, and remember it in the save.
+##
+## Most of the work is done by Godot itself: every Control re-translates its own `text` / `tooltip_text`
+## the moment the locale changes, however long ago it was built (see FridgeStrings). What is left for us
+## is the handful of strings that were FORMATTED once and then stored, and the entries whose description
+## is a composite - those are re-pushed below.
+func _set_fridge_language(code: String, persist := true) -> void:
+	var next := FridgeStrings.LANGUAGE_EN if code == FridgeStrings.LANGUAGE_EN else FridgeStrings.LANGUAGE_ZH
+	fridge_language = next
+	FridgeStrings.set_language(next)
+	_refresh_fridge_language_texts()
+	if fridge_desktop_pet != null and is_instance_valid(fridge_desktop_pet):
+		fridge_desktop_pet.call("refresh_tray_tooltip")
+	# ⚠ `persist` is for the TEST SUITES: they pin 中文 so that their string assertions do not depend on
+	# whichever language the player last picked - and that pin must not rewrite the player's save.
+	if not persist:
+		return
+	_save_fridge_progress()
+	var toast := "语言已切换为英文" if next == FridgeStrings.LANGUAGE_EN else "语言已切换为中文"
+	_show_fridge_progress_toast(FridgeStrings.t(toast))
+
+
+## ...re-push every string that is NOT a Control's own plain text, so one click reaches everything:
+## the two notebook pages whose descriptions are composites, and the HUD labels that hold a formatted
+## string. ⚠ The 骨架 page's own entries are plain keys - their Labels translate themselves.
+func _refresh_fridge_language_texts() -> void:
+	if fridge_gallery_panel != null and is_instance_valid(fridge_gallery_panel):
+		fridge_gallery_panel.call("update_tab_entries", FRIDGE_GALLERY_TAB_ITEMS, _fridge_unlocked_item_entries())
+		fridge_gallery_panel.call("update_tab_entries", FRIDGE_GALLERY_TAB_BOX, _fridge_unlocked_box_item_entries())
+		_refresh_fridge_progress_tab()
+	_refresh_fridge_ui()
 
 
 ## Plays one of the fridge man's idle ("待机") animations. 摸摸小猫 is special: the
@@ -1807,9 +2261,18 @@ func _update_fridge_idle(delta: float) -> void:
 		return
 	# The pause is over: play the next animation out of the shuffled bag, then wait
 	# out a fresh pause. Every idle animation is played once before any repeats.
+	# 只播放已解锁的待机动画: skip any leftovers in the bag that are not unlocked, and if nothing is
+	# unlocked at all, simply return so neither character plays an un-unlocked idle animation.
 	fridge_idle_timer = FRIDGE_IDLE_DELAY
+	while not fridge_idle_bag.is_empty():
+		var candidate: Dictionary = fridge_idle_bag[0]
+		if _is_fridge_idle_pick_unlocked(str(candidate["who"]), str(candidate["action"])):
+			break
+		fridge_idle_bag.pop_front()
 	if fridge_idle_bag.is_empty():
 		fridge_idle_bag = _build_fridge_idle_bag()
+	if fridge_idle_bag.is_empty():
+		return
 	var pick: Dictionary = fridge_idle_bag.pop_front()
 	if str(pick["who"]) == "man":
 		_play_fridge_man_idle_action(str(pick["action"]))
@@ -1819,16 +2282,30 @@ func _update_fridge_idle(delta: float) -> void:
 		_play_fridge_cat_idle_action(str(pick["action"]))
 
 
-## One shuffled bag holding every idle animation of both characters: each one is
-## played once before any of them comes round again. The two take turns and the
-## fridge man leads, so the animation the player sees right after the pause is his.
+## Maps a character + action pair onto its gallery entry id (`FRIDGE_GALLERY_ENTRIES`) and checks
+## whether the player has unlocked that idle animation (`fridge_unlocked_anims`).
+func _is_fridge_idle_pick_unlocked(who: String, action_id: String) -> bool:
+	var gallery_id := ""
+	if who == "man":
+		gallery_id = "man_%s" % action_id
+	elif who == "cat":
+		gallery_id = "cat_run_circle" if action_id == "run" else "cat_%s" % action_id
+	return not gallery_id.is_empty() and fridge_unlocked_anims.has(gallery_id)
+
+
+## One shuffled bag holding every UNLOCKED idle animation of both characters: each one is
+## played once before any of them comes round again ("冰箱爷爷和小猫的待机动画 只能使用已经解锁的，
+## 未解锁的待机动画不要再还未解锁的情况下播放"). The two take turns and the fridge man leads when he
+## has an unlocked animation, so the animation the player sees right after the pause is his.
 func _build_fridge_idle_bag() -> Array:
 	var man_group: Array = []
 	for action_id: String in FRIDGE_IDLE_MAN_ACTIONS:
-		man_group.append({"who": "man", "action": action_id})
+		if _is_fridge_idle_pick_unlocked("man", action_id):
+			man_group.append({"who": "man", "action": action_id})
 	var cat_group: Array = []
 	for action_id: String in FRIDGE_IDLE_CAT_ACTIONS:
-		cat_group.append({"who": "cat", "action": action_id})
+		if _is_fridge_idle_pick_unlocked("cat", action_id):
+			cat_group.append({"who": "cat", "action": action_id})
 	man_group = _order_fridge_idle_group(man_group)
 	cat_group = _order_fridge_idle_group(cat_group)
 	# 冰箱人先来: alternate the two, the fridge man first, so a rotation turn is
@@ -1871,6 +2348,8 @@ func _is_fridge_idle_pointer_interacting() -> bool:
 ## pomodoro round, no round-end choice buttons, no manual gallery preview, no
 ## half-finished walk, bag shut and neither character being dragged.
 func _can_play_fridge_idle() -> bool:
+	if fridge_props_hidden:
+		return false
 	if fridge_phase != "idle" or fridge_round_choices_pending or fridge_round_ending_in_flight:
 		return false
 	if fridge_idle_suppress > 0.0 or fridge_cat_motion != "":
@@ -1948,7 +2427,7 @@ func _create_fridge_box_panel() -> void:
 	fridge_box_panel.name = "PropBoxPanel"
 	fridge_box_panel.visible = false
 	fridge_overlay_root.add_child(fridge_box_panel)
-	fridge_box_panel.call("setup", FRIDGE_BOX_TITLE, FRIDGE_BOX_ENTRIES, {
+	fridge_box_panel.call("setup", FRIDGE_BOX_TITLE, _fridge_box_entries(), {
 		# 公文包: the board IS the opened case (its lid paints the title, its lining holds the page).
 		"board": "case",
 		"cell_texture": FRIDGE_BOX_CELL_TEXTURE,
@@ -1957,6 +2436,9 @@ func _create_fridge_box_panel() -> void:
 		"action_header_width": FRIDGE_BOX_ACTION_HEADER_WIDTH,
 		"card_size": FRIDGE_BOX_CARD_SIZE,
 		"cell_margin": FRIDGE_BOX_CELL_MARGIN,
+		# 隐藏滑块: the case's tray never needs a scrollbar (the action row pages itself and the tray is a
+		# fixed 3x2), so no vertical bar is drawn beside the compartments.
+		"scrollbar_style": "hidden",
 		"grid_columns": FRIDGE_BOX_GRID_COLUMNS,
 		# 固定托盘: pad the tray to 3x3, so the opened case shows its empty compartments too.
 		"grid_min_rows": FRIDGE_BOX_GRID_ROWS,
@@ -1987,16 +2469,30 @@ func _on_fridge_box_toggled(open: bool) -> void:
 	# Only one of the two left-side panels is shown at a time.
 	if open:
 		_close_fridge_gallery(false)
+	# 公文包: the case only carries the actions the collection has unlocked, and an unlock can happen while it
+	# is shut (the cat's nose is always there), so the list is re-pushed on every open.
+	_refresh_fridge_box_entries()
 	fridge_box_panel.visible = open
 	if open and fridge_box != null and is_instance_valid(fridge_box):
 		fridge_box_panel.call("popup_at", _fridge_box_popup_position())
 
 
 func _on_fridge_box_entry_pressed(entry_id: String) -> void:
+	if not _is_fridge_box_item(entry_id):
+		return
+	# 未解锁: a 公文包 item the cat's mouth has not dealt yet cannot be picked - it stays greyed out until
+	# it is found.
+	if not _is_fridge_box_unlocked(entry_id):
+		_show_fridge_progress_toast(FridgeStrings.t("该物品未解锁"))
+		return
 	match entry_id:
-		"ball", "tomato":
+		"juggle_tomato":
+			# 番茄: the box id is juggle_tomato (see FRIDGE_BOX_ENTRIES), the projectile it sets is "tomato".
 			if fridge_player != null and is_instance_valid(fridge_player):
-				fridge_player.call("set_juggle_projectile", entry_id)
+				fridge_player.call("set_juggle_projectile", "tomato")
+		"ball":
+			if fridge_player != null and is_instance_valid(fridge_player):
+				fridge_player.call("set_juggle_projectile", "ball")
 		"spray_text":
 			# 字体: the BB机's own item - the shower of paper glyphs.
 			set_fridge_spray_payload("text")
@@ -2009,6 +2505,18 @@ func _on_fridge_box_entry_pressed(entry_id: String) -> void:
 			# 不要显示自己的图标 - the action logo on the lid already IS that item's picture. Unlike 球 /
 			# 番茄 / 字体 / 泡泡 (which swap a projectile or a payload) picking one starts NO performance.
 			pass
+		"hearthstone":
+			if fridge_player != null and is_instance_valid(fridge_player):
+				fridge_player.call("set_computer_drop_item", "hearthstone")
+		"mario_cartridge":
+			if fridge_player != null and is_instance_valid(fridge_player):
+				fridge_player.call("set_controller_prop", "mario_cartridge")
+		"computer_portal":
+			if fridge_player != null and is_instance_valid(fridge_player):
+				fridge_player.call("set_computer_portal", "computer_portal")
+		"orc_axe":
+			if fridge_player != null and is_instance_valid(fridge_player):
+				fridge_player.call("set_computer_weapon", "orc_axe")
 		_:
 			return
 	fridge_box_selected_id = entry_id
@@ -2042,7 +2550,16 @@ func _create_fridge_yarn_ball(item: Dictionary, index: int) -> void:
 	var item_name := str(item.get("name", item_id))
 	var ball := FridgeYarnBallScript.new()
 	ball.name = "%sYarnBall" % item_id.capitalize()
-	ball.setup(item_id, item_name, true, _get_fridge_item_reward(item_id))
+	# 明显区分: a 公文包 item is drawn as a SMALLER ball with a BLUE paper token wearing its own box-entry
+	# icon, so the player can tell at a glance which balls add something to the briefcase
+	# (「图标和大小要和动画物品明显区分开」 + 「图标背景色改成蓝色」); a 待机动画 icon ball wears a GREEN
+	# paper token (「待机动画在猫嘴里的图标背景颜色改成绿色」).
+	var is_box := _is_fridge_box_item(item_id)
+	var is_anim := _is_fridge_anim_id(item_id)
+	ball.setup(item_id, item_name, true, _get_fridge_item_reward(item_id),
+		str(item.get("icon", "")), FRIDGE_DRAW_BOX_BALL_RADIUS if is_box else -1.0, is_box, is_anim)
+	# 未解锁过: a ball that just handed the player something NEW flashes its paper token (the icon background).
+	ball.set_new_find(fridge_mouth_new_ids.has(item_id))
 	ball.pressed_for_drag.connect(_on_fridge_yarn_ball_pressed)
 	ball.unlock_requested.connect(_on_fridge_item_unlock_pressed)
 	fridge_yarn_pile.add_child(ball)
@@ -2111,14 +2628,14 @@ func _create_fridge_shop_row(item: Dictionary) -> void:
 	info_column.add_child(name_label)
 
 	var duration_label := Label.new()
-	duration_label.text = "倒计时：%s" % _format_fridge_duration(_get_fridge_item_duration(item_id))
+	duration_label.text = FridgeStrings.t("倒计时：%s") % _format_fridge_duration(_get_fridge_item_duration(item_id))
 	duration_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	duration_label.add_theme_font_size_override("font_size", 10)
 	duration_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.28))
 	info_column.add_child(duration_label)
 
 	var description_label := Label.new()
-	description_label.text = "说明：%s" % str(item.get("description", ""))
+	description_label.text = FridgeStrings.t("说明：%s") % FridgeStrings.t(str(item.get("description", "")))
 	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	description_label.add_theme_font_size_override("font_size", 9)
 	description_label.add_theme_color_override("font_color", Color(0.84, 0.86, 0.82, 0.86))
@@ -2146,29 +2663,24 @@ func _create_fridge_shop_row(item: Dictionary) -> void:
 
 
 func _load_fridge_progress() -> void:
-	var default_state := {
+	# 删除存档后初始化: remember whether there IS a live save, so the watcher can tell a deletion from a
+	# game that has simply never saved yet.
+	fridge_save_seen = FileAccess.file_exists(FRIDGE_SAVE_PATH)
+	if _read_fridge_save_file(FRIDGE_SAVE_PATH):
+		return
+	# No usable file (first run, or one that is not JSON any more): start from the default state.
+	# ⚠ 解锁进度: the "anims" / "mouth_items" keys are what tell a NEW save apart from one written before
+	# the unlock system existed - without them a first run would be mistaken for a legacy save and be
+	# handed the whole collection. An empty list means "nothing found yet".
+	_apply_fridge_progress({
 		"coins": 0,
-		"owned_items": [FRIDGE_DEFAULT_VARIANT_ID],
+		"owned_items": [],
 		"active_item_id": FRIDGE_DEFAULT_VARIANT_ID,
 		"work_duration": FRIDGE_DEFAULT_WORK_DURATION,
 		"break_duration": FRIDGE_DEFAULT_BREAK_DURATION,
-	}
-
-	if not FileAccess.file_exists(FRIDGE_SAVE_PATH):
-		_apply_fridge_progress(default_state)
-		return
-
-	var file := FileAccess.open(FRIDGE_SAVE_PATH, FileAccess.READ)
-	if file == null:
-		_apply_fridge_progress(default_state)
-		return
-
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if not parsed is Dictionary:
-		_apply_fridge_progress(default_state)
-		return
-
-	_apply_fridge_progress(parsed)
+		"anims": [],
+		"mouth_items": [],
+	})
 
 
 func _apply_fridge_progress(data: Dictionary) -> void:
@@ -2183,12 +2695,127 @@ func _apply_fridge_progress(data: Dictionary) -> void:
 	# back to the default so the mouth never carries an item it no longer lists.
 	if not _is_fridge_mouth_item(fridge_active_item_id):
 		fridge_active_item_id = FRIDGE_DEFAULT_VARIANT_ID
-	if not fridge_owned_items.has(FRIDGE_DEFAULT_VARIANT_ID):
-		fridge_owned_items.append(FRIDGE_DEFAULT_VARIANT_ID)
 	if fridge_active_item_id == "":
 		fridge_active_item_id = FRIDGE_DEFAULT_VARIANT_ID
+	# 解锁进度: a save with no "anims" key predates the unlock system - it is treated as FULLY unlocked
+	# (and topped up with everything added since), which is what keeps an existing player's notebook
+	# exactly as it was. A new save loads only what it actually found.
+	if not data.has("anims"):
+		fridge_unlocked_anims.clear()
+		# ⚠ ALL animations, not the 1-per-5-item formula: a pre-unlock-system save was fully unlocked and
+		# its 骨架 page must not shrink. ⚠ Its OWNED list is left exactly as the file has it - the two
+		# items added with this feature are NOT handed out for free, they can be found in the mouth like
+		# any other item (that is the whole point of the collection).
+		fridge_unlocked_anims = _fridge_idle_anim_ids()
+		fridge_mouth_items = _fridge_mouth_item_pool()
+	else:
+		fridge_unlocked_anims.clear()
+		for anim_id: Variant in data.get("anims", []):
+			var wanted_anim := str(anim_id)
+			if _fridge_idle_anim_ids().has(wanted_anim) and not fridge_unlocked_anims.has(wanted_anim):
+				fridge_unlocked_anims.append(wanted_anim)
+		fridge_mouth_items.clear()
+		for item_id: Variant in data.get("mouth_items", []):
+			var wanted_item := str(item_id)
+			# 抽奖池: a ball can now be a 公文包 consumable too, so the mouth accepts either kind.
+			if _is_fridge_draw_item(wanted_item) and not fridge_mouth_items.has(wanted_item):
+				fridge_mouth_items.append(wanted_item)
+		# 每天: the calendar day the draw counters belong to. A file without the key starts empty, so the
+		# first refresh after loading one counts as the day's first (harmless).
+		fridge_refresh_day = str(data.get("refresh_day", ""))
+		_sync_fridge_idle_anims()
+	# 公文包物品: the swappable interaction items the cat's mouth has unlocked. A file without the key (every
+	# save made before this existed) simply owns none.
+	fridge_box_unlocked.clear()
+	for box_id: Variant in data.get("box_unlocked", []):
+		var stored_id := str(box_id)
+		if _is_fridge_box_item(stored_id) and not fridge_box_unlocked.has(stored_id):
+			fridge_box_unlocked.append(stored_id)
+	# 迁移: a save from the old CONSUMABLE build stored remaining-use counts under "box_items" instead - an
+	# item with any uses left is treated as unlocked, so nobody loses what they had already found.
+	var legacy_box: Variant = data.get("box_items", {})
+	if legacy_box is Dictionary:
+		for key: Variant in (legacy_box as Dictionary).keys():
+			var legacy_id := str(key)
+			if _is_fridge_box_item(legacy_id) and int((legacy_box as Dictionary)[key]) > 0 \
+					and not fridge_box_unlocked.has(legacy_id):
+				fridge_box_unlocked.append(legacy_id)
+	# 初始可交互道具: every 猫嘴物品 the player ALREADY owns brings its briefcase props along, so a save made
+	# before those came with the item gets them now (a new find does the same through _unlock_fridge_draw_item).
+	# ⚠ After the box list is read, so a saved list is never overwritten - this only ever ADDS.
+	for item_id: String in fridge_owned_items:
+		_unlock_fridge_box_items_for(item_id)
+	# 每天: the day's draw counter. A file without it starts a fresh day.
+	fridge_daily_draws = maxi(int(data.get("daily_draws", 0)), 0)
 	fridge_work_duration = clamp(float(data.get("work_duration", FRIDGE_DEFAULT_WORK_DURATION)), 5.0, 3600.0)
 	fridge_break_duration = clamp(float(data.get("break_duration", FRIDGE_DEFAULT_BREAK_DURATION)), 2.0, 1800.0)
+	# 公文包: only an id that still exists in FRIDGE_BOX_ENTRIES is accepted, so an old save (which has no
+	# box_selected_id at all) or a hand-edited one can never arm the box with something that is not there.
+	var box_id := str(data.get("box_selected_id", fridge_box_selected_id))
+	for entry: Dictionary in FRIDGE_BOX_ENTRIES:
+		if str(entry.get("id", "")) == box_id:
+			fridge_box_selected_id = box_id
+			break
+	# 中英文切换: the language is part of the save. ⚠ Applied here, during the load, BEFORE any UI exists -
+	# so the panels are built straight into the right language. A file without the key keeps the current
+	# one (that is what makes every pre-existing save work unchanged).
+	fridge_language = FridgeStrings.LANGUAGE_EN if str(data.get("language", fridge_language)) == FridgeStrings.LANGUAGE_EN \
+		else FridgeStrings.LANGUAGE_ZH
+	FridgeStrings.set_language(fridge_language)
+
+
+## 删除存档后初始化: BOTH ways a save can be deleted land here - the live file vanishing from under a
+## running game, and the 进度 page's 重置 button. A deleted save has to mean a fresh start, so the whole
+## session is put back to what a first run looks like - an empty collection, an empty cat's mouth, no
+## unlocked 待机动画, an empty 公文包, default coins and timers. 中英文切换 rides the save, so the language
+## goes back to 中文 with it, and every panel is refreshed so the notebook empties out on the spot.
+## `remove_live_save` also deletes the live auto-save file - ⚠ which the 重置 button MUST do: the player
+## thinks of that file as "the save", so without it a restart would bring every unlock straight back.
+## ⚠ A round that is already counting down is left alone; only the progress around it is reset.
+func _reset_fridge_progress_to_fresh_save(remove_live_save: bool) -> void:
+	if remove_live_save:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(FRIDGE_SAVE_PATH))
+	fridge_save_seen = false
+	_apply_fridge_progress({
+		"coins": 0,
+		"owned_items": [],
+		"active_item_id": FRIDGE_DEFAULT_VARIANT_ID,
+		"work_duration": FRIDGE_DEFAULT_WORK_DURATION,
+		"break_duration": FRIDGE_DEFAULT_BREAK_DURATION,
+		"anims": [],
+		"mouth_items": [],
+		# 公文包物品: a fresh game owns none - they are found in the cat's mouth like everything else - and
+		# the day's draw counter starts clean.
+		"box_unlocked": [],
+		"daily_draws": 0,
+	})
+	_rebuild_fridge_mouth_balls()
+	_refresh_fridge_ui()
+	_refresh_fridge_yarn_balls()
+	_refresh_fridge_collection_pages()
+	_refresh_fridge_progress_tab()
+	if fridge_box_panel != null and is_instance_valid(fridge_box_panel):
+		fridge_box_panel.call("set_selected", fridge_box_selected_id)
+
+
+## 删除存档后初始化: the live save file went away underneath a RUNNING game (Explorer, or any other tool).
+func _reset_fridge_progress_for_deleted_save() -> void:
+	_reset_fridge_progress_to_fresh_save(false)
+	_show_fridge_progress_toast(FridgeStrings.t("存档已删除，进度已重置"))
+
+
+## 删除存档后初始化: a slow poll of the LIVE save file (see fridge_save_seen). One FileAccess check every
+## FRIDGE_SAVE_WATCH_INTERVAL, and it only ever fires when a file that WAS there has gone.
+func _update_fridge_save_watch(delta: float) -> void:
+	fridge_save_watch_timer -= delta
+	if fridge_save_watch_timer > 0.0:
+		return
+	fridge_save_watch_timer = FRIDGE_SAVE_WATCH_INTERVAL
+	var exists := FileAccess.file_exists(FRIDGE_SAVE_PATH)
+	if fridge_save_seen and not exists:
+		_reset_fridge_progress_for_deleted_save()
+		return
+	fridge_save_seen = exists
 
 
 func _normalize_fridge_owned_items(value: Variant) -> Array[String]:
@@ -2202,24 +2829,65 @@ func _normalize_fridge_owned_items(value: Variant) -> Array[String]:
 				continue
 			if not owned.has(item_id):
 				owned.append(item_id)
-	if not owned.has(FRIDGE_DEFAULT_VARIANT_ID):
-		owned.insert(0, FRIDGE_DEFAULT_VARIANT_ID)
+	# 解锁进度: a NEW save starts with an empty collection (「第二页里的物品动画是清空的」) - the starter
+	# tomato is handed out by the first mouth refresh like everything else. ⚠ A LEGACY save (no "anims"
+	# key) is topped up to everything in _apply_fridge_progress instead, so nothing is lost there.
 	return owned
 
 
 func _save_fridge_progress() -> void:
+	_write_fridge_save_file(FRIDGE_SAVE_PATH)
+
+
+## 存档: the ONE place a save's shape is written - the live auto-save and every slot share it. Version 2
+## added the 公文包 action, so a version-1 file (which has no such key) still loads.
+func _write_fridge_save_file(path: String) -> void:
 	var data := {
-		"version": 1,
+		"version": 2,
 		"coins": fridge_coin_count,
 		"owned_items": fridge_owned_items,
 		"active_item_id": fridge_active_item_id,
 		"work_duration": fridge_work_duration,
 		"break_duration": fridge_break_duration,
+		# 公文包: the item the prop box is armed with. It is the door into that fridge man's countdown
+		# performance (see FRIDGE_BOX_ENTRIES) - one of the two things the user asked a save to carry.
+		"box_selected_id": fridge_box_selected_id,
+		# 中英文切换: the language the game's text is shown in. ⚠ A file without the key (every save made
+		# before this existed) simply keeps the current language.
+		"language": fridge_language,
+		# 解锁进度: the collection (owned_items above), the 待机动画 cards that have been unlocked, the
+		# items the cat's mouth is holding right now, and the calendar day of the last refresh-guarantee.
+		"anims": fridge_unlocked_anims,
+		"mouth_items": fridge_mouth_items,
+		"refresh_day": fridge_refresh_day,
+		# 公文包物品: the swappable interaction items the cat's mouth has unlocked (permanent unlocks now - no
+		# use counts), and the day's refresh count that drives 前三次保底.
+		"box_unlocked": fridge_box_unlocked,
+		"daily_draws": fridge_daily_draws,
 	}
-	var file := FileAccess.open(FRIDGE_SAVE_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return
 	file.store_string(JSON.stringify(data, "\t"))
+	# 删除存档后初始化: the live save is on disk again, so the watcher must not read its absence as a
+	# deletion later (a SLOT file is a different path and does not count).
+	if path == FRIDGE_SAVE_PATH:
+		fridge_save_seen = true
+
+
+## ...and the ONE place it is read back. False when there is no usable file at that path.
+func _read_fridge_save_file(path: String) -> bool:
+	if not FileAccess.file_exists(path):
+		return false
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return false
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return false
+	_apply_fridge_progress(parsed)
+	return true
 
 
 func _refresh_fridge_ui() -> void:
@@ -2228,23 +2896,24 @@ func _refresh_fridge_ui() -> void:
 		fridge_player.call("set_pomodoro_state", fridge_phase, _get_fridge_phase_progress(), _format_fridge_time(fridge_time_left))
 
 	if fridge_coin_label != null:
-		fridge_coin_label.text = "%d 金币" % fridge_coin_count
+		fridge_coin_label.text = FridgeStrings.t("%d 金币") % fridge_coin_count
 
 	if fridge_reward_label != null:
-		fridge_reward_label.text = "完成一次专注奖励 %d 金币。" % _get_fridge_active_reward()
+		fridge_reward_label.text = FridgeStrings.t("完成一次专注奖励 %d 金币。") % _get_fridge_active_reward()
 
 	if fridge_reset_button != null:
 		fridge_reset_button.disabled = fridge_phase == "idle"
 
 	if fridge_timer_label != null:
 		if fridge_phase == "idle":
-			fridge_timer_label.text = "待机：%s" % _get_fridge_item_name(fridge_active_item_id)
+			fridge_timer_label.text = FridgeStrings.t("待机：%s") % FridgeStrings.t(_get_fridge_item_name(fridge_active_item_id))
 		else:
 			fridge_timer_label.text = "%s：%s" % [_get_fridge_phase_label(fridge_phase), _format_fridge_time(fridge_time_left)]
 
 	if fridge_status_label != null:
 		var active_name := _get_fridge_item_name(fridge_active_item_id)
-		fridge_status_label.text = "当前道具：%s。%s" % [active_name, _get_fridge_phase_hint()]
+		fridge_status_label.text = FridgeStrings.t("当前道具：%s。%s") % [FridgeStrings.t(active_name),
+		FridgeStrings.t(_get_fridge_phase_hint())]
 
 	if fridge_work_duration_spin != null:
 		fridge_work_duration_spin.editable = fridge_phase == "idle"
@@ -2291,10 +2960,10 @@ func _refresh_fridge_ui() -> void:
 		if name_label != null:
 			name_label.add_theme_color_override("font_color", Color(0.98, 0.96, 0.90) if unlocked else Color(0.62, 0.62, 0.62))
 		if duration_label != null:
-			duration_label.text = "倒计时：%s" % _format_fridge_duration(_get_fridge_item_duration(item_id))
+			duration_label.text = FridgeStrings.t("倒计时：%s") % _format_fridge_duration(_get_fridge_item_duration(item_id))
 			duration_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.28) if unlocked else Color(0.56, 0.56, 0.56))
 		if description_label != null:
-			description_label.text = "说明：%s" % str(item.get("description", ""))
+			description_label.text = FridgeStrings.t("说明：%s") % FridgeStrings.t(str(item.get("description", "")))
 			description_label.add_theme_color_override("font_color", Color(0.84, 0.86, 0.82, 0.86) if unlocked else Color(0.50, 0.50, 0.50, 0.80))
 		if row_panel != null:
 			row_panel.modulate = Color.WHITE if unlocked else Color(0.58, 0.58, 0.58, 0.88)
@@ -2316,6 +2985,8 @@ func _update_fridge_pomodoro(delta: float) -> void:
 				# If he was juggling, play the comic ball-to-the-face ending
 				# first; the round choices appear once it finishes.
 				var was_juggling := fridge_player_juggling
+				var was_controller := fridge_active_item_id == "controller"
+				var was_computer := fridge_active_item_id == "computer"
 				fridge_player_juggling = false
 				_update_fridge_player_form()
 				# A pager reaction levitates until the countdown it was started in
@@ -2325,11 +2996,23 @@ func _update_fridge_pomodoro(delta: float) -> void:
 					fridge_player.call("stop_pager_reaction")
 					fridge_player.call("stop_cassette_reaction")
 					fridge_player.call("stop_tv_reaction")
+					if not was_computer:
+						fridge_player.call("stop_computer_reaction")
+					if not was_controller:
+						fridge_player.call("stop_controller_reaction")
 				if was_juggling and fridge_player != null and is_instance_valid(fridge_player):
 					fridge_round_ending_in_flight = true
 					# 打破第四面墙: instead of dropping one object on his face, the last
 					# tosses rush the player's screen and the view takes the hit.
 					fridge_player.call("play_screen_toss_ending")
+				elif was_computer and fridge_player != null and is_instance_valid(fridge_player):
+					fridge_round_ending_in_flight = true
+					# 4. 倒计时结束那个兽人会通过传送石回到电脑里！
+					fridge_player.call("play_computer_ending")
+				elif was_controller and fridge_player != null and is_instance_valid(fridge_player):
+					fridge_round_ending_in_flight = true
+					# 手柄游戏动画在倒计时结束时：冰箱爷爷从游戏机插槽中弹出，变成一个红色蘑菇后消失！
+					fridge_player.call("play_controller_ending")
 				else:
 					_show_fridge_round_choices()
 			elif fridge_phase == "break":
@@ -2339,6 +3022,8 @@ func _update_fridge_pomodoro(delta: float) -> void:
 					fridge_player.call("stop_pager_reaction")
 					fridge_player.call("stop_cassette_reaction")
 					fridge_player.call("stop_tv_reaction")
+					fridge_player.call("stop_computer_reaction")
+					fridge_player.call("stop_controller_reaction")
 				_save_fridge_progress()
 
 	fridge_pulse += delta
@@ -2501,6 +3186,10 @@ func _show_fridge_item_toolbar() -> void:
 			ball.scale = Vector2.ONE
 	if fridge_cat_pet != null and is_instance_valid(fridge_cat_pet):
 		fridge_cat_pet.call("set_bag_open", true)
+	# 打开猫嘴: opening the bag presses the nose once - 「每次打开猫嘴，猫鼻子按钮就自动点击一次」 - so every
+	# open deals a fresh mouth (and counts towards the day's 前三次保底 draw allowance, just like a click would).
+	# ⚠ It runs BEFORE the scatter below, so the balls it rebuilds are the ones the spawn animation throws out.
+	_on_fridge_cat_nose_pressed()
 	_scatter_fridge_yarn_balls()
 	_position_fridge_popups()
 	_refresh_fridge_ui()
@@ -2626,6 +3315,12 @@ func _take_fridge_item_out_of_mouth(item_id: String) -> void:
 		# 电视机: he is turned into a fisherman and poles his 乌篷船 (白娘子 and 许仙 sitting
 		# at the far end, backs to the player) for the whole countdown.
 		fridge_player.call("play_tv_reaction")
+	elif item_id == "computer" and fridge_player != null and is_instance_valid(fridge_player):
+		# 复古电脑: he dons swappable orc armor and dual-wields two swappable broad battle axes.
+		fridge_player.call("play_computer_reaction")
+	elif item_id == "controller" and fridge_player != null and is_instance_valid(fridge_player):
+		# 游戏机手柄: he transforms into a Super Mario-style plumber and jumps on a brick platform with a growing mushroom.
+		fridge_player.call("play_controller_reaction")
 
 
 func _handle_fridge_yarn_drag(event: InputEvent) -> bool:
@@ -2807,8 +3502,15 @@ func _get_fridge_yarn_mouth_global_rect() -> Rect2:
 
 ## Clicking the cat's nose re-deals the balls: each one drops into the throat and
 ## then gushes back out, one after another, to a fresh spot in the mouth.
+## 猫鼻子: refreshing re-deals the mouth - 每次刷新最少3个物品，最多5个 - and this is also how items are
+## FOUND: the deal is weighted by each item's countdown length (short = common, long = rare), and the day's
+## FIRST refresh guarantees at least one not-yet-owned item (see _roll_fridge_mouth_items).
 func _on_fridge_cat_nose_pressed() -> void:
+	fridge_mouth_items = _roll_fridge_mouth_items()
+	_rebuild_fridge_mouth_balls()
+	_refresh_fridge_ui()
 	_refresh_fridge_yarn_balls()
+	_save_fridge_progress()
 
 
 ## 铃铛: clicking the bell the cat wears asks first - 「要退出游戏吗？」 with 取消 / 退出 - and only 退出 closes
@@ -3130,6 +3832,17 @@ func _handle_fridge_panel_drag(event: InputEvent) -> bool:
 
 
 func _handle_fridge_player_drag(event: InputEvent) -> bool:
+	if fridge_player != null and is_instance_valid(fridge_player) \
+			and bool(fridge_player.call("is_dragging_computer_loot")):
+		if event is InputEventMouseMotion:
+			fridge_player.call("drag_computer_loot", get_global_mouse_position())
+			return true
+		if event is InputEventMouseButton:
+			var release_btn := event as InputEventMouseButton
+			if release_btn.button_index == MOUSE_BUTTON_LEFT and not release_btn.pressed:
+				fridge_player.call("release_computer_loot")
+				return true
+
 	if fridge_player_is_dragging:
 		if event is InputEventMouseMotion:
 			var mouse_position: Vector2 = get_global_mouse_position()
@@ -3153,7 +3866,11 @@ func _handle_fridge_player_drag(event: InputEvent) -> bool:
 					# prop and the briefcase - a second click brings them back. While a
 					# performance owns him the same click still turns him around.
 					if _is_fridge_player_performing():
-						_flip_fridge_player_flight_dir()
+						if fridge_player != null and is_instance_valid(fridge_player) \
+								and bool(fridge_player.call("is_waiting_for_computer_axe_click")):
+							fridge_player.call("pick_up_computer_stone_axe")
+						else:
+							_flip_fridge_player_flight_dir()
 					elif not _is_any_fridge_panel_open():
 						# 面板打开时不隐藏: the book / briefcase / cat-bag panels are opened FROM these
 						# very props, so a click that lands on him while one of them is on screen must
@@ -3167,6 +3884,15 @@ func _handle_fridge_player_drag(event: InputEvent) -> bool:
 	if event is InputEventMouseButton:
 		var mouse_button := event as InputEventMouseButton
 		if mouse_button.button_index == MOUSE_BUTTON_LEFT and mouse_button.pressed:
+			if fridge_player != null and is_instance_valid(fridge_player) \
+					and bool(fridge_player.call("try_press_computer_loot", get_global_mouse_position())):
+				return true
+			if fridge_player != null and is_instance_valid(fridge_player) \
+					and bool(fridge_player.call("try_click_controller_cloud", get_global_mouse_position())):
+				return true
+			if fridge_player != null and is_instance_valid(fridge_player) \
+					and bool(fridge_player.call("try_click_computer_stone_axe", get_global_mouse_position())):
+				return true
 			if _is_mouse_over_fridge_player():
 				fridge_player_is_dragging = true
 				fridge_player_drag_moved = false
@@ -3208,11 +3934,474 @@ func _is_any_fridge_panel_open() -> bool:
 ## 全部解锁: every item in FRIDGE_ITEMS is owned from the start, so the cat's bag lists them all with
 ## nothing locked and the shop has nothing left to sell. Applied AFTER the save is read, so an older
 ## save - which only listed whatever had been bought then - is topped up as well.
+## 猫嘴物品池: every item the cat's mouth can deal, in FRIDGE_ITEMS order.
+func _fridge_mouth_item_pool() -> Array[String]:
+	var pool: Array[String] = []
+	for item: Dictionary in FRIDGE_ITEMS:
+		var item_id := str(item.get("id", ""))
+		if not item_id.is_empty() and _is_fridge_mouth_item(item_id):
+			pool.append(item_id)
+	return pool
+
+
+## 公文包: one of FRIDGE_BOX_ENTRIES by id ({} when unknown).
+func _get_fridge_box_item_record(item_id: String) -> Dictionary:
+	for entry: Dictionary in FRIDGE_BOX_ENTRIES:
+		if str(entry.get("id", "")) == item_id:
+			return entry
+	return {}
+
+
+func _is_fridge_box_item(item_id: String) -> bool:
+	# ⚠ A permanent item (one in FRIDGE_ITEMS) is never a 公文包 item, even if a box entry reused its
+	# id - this guard keeps the two namespaces apart (see the juggle_tomato note in FRIDGE_BOX_ENTRIES).
+	# ⚠ NOT _is_fridge_mouth_item: that one only rejects the excluded ids, so it is true for ANY id.
+	if not _get_fridge_item_record(item_id).is_empty():
+		return false
+	return not _get_fridge_box_item_record(item_id).is_empty()
+
+
+## 待机动画: the gallery entry (its name and icon) of an animation id, or {} when it is not one.
+## ⚠ The always-on cards (Discord / 中 / 英文) are NOT animations.
+func _get_fridge_anim_record(item_id: String) -> Dictionary:
+	if FRIDGE_GALLERY_ALWAYS_IDS.has(item_id):
+		return {}
+	for entry: Dictionary in FRIDGE_GALLERY_ENTRIES:
+		if str(entry.get("id", "")) == item_id:
+			return entry
+	return {}
+
+
+func _is_fridge_anim_id(item_id: String) -> bool:
+	return not _get_fridge_anim_record(item_id).is_empty()
+
+
+## A drawable id's display record: a countdown item's own entry, a 公文包 item's box entry, or a 待机动画's
+## gallery entry (it carries the icon and the name).
+func _get_fridge_draw_record(item_id: String) -> Dictionary:
+	var mouth := _get_fridge_item_record(item_id)
+	if not mouth.is_empty():
+		return mouth
+	var box := _get_fridge_box_item_record(item_id)
+	if not box.is_empty():
+		return box
+	return _get_fridge_anim_record(item_id)
+
+
+## A ball id is drawable when it is a permanent mouth item, a 公文包 item OR a 待机动画 icon.
+func _is_fridge_draw_item(item_id: String) -> bool:
+	if not _get_fridge_item_record(item_id).is_empty():
+		# ⚠ _is_fridge_mouth_item only rejects the excluded ids, so the record check above is what makes this
+		# mean "a real mouth item" rather than "any id at all".
+		return _is_fridge_mouth_item(item_id)
+	return _is_fridge_box_item(item_id) or _is_fridge_anim_id(item_id)
+
+
+## A display name for any kind of ball.
+func _fridge_draw_item_name(item_id: String) -> String:
+	if _is_fridge_box_item(item_id):
+		return FridgeStrings.t(str(_get_fridge_box_item_record(item_id).get("name", item_id)))
+	if _is_fridge_anim_id(item_id):
+		return FridgeStrings.t(str(_get_fridge_anim_record(item_id).get("name", item_id)))
+	return FridgeStrings.t(_get_fridge_item_name(item_id))
+
+
+## 抽奖池: everything a refresh may deal - every mouth item, every 待机动画 icon (「动画也进抽奖池」), PLUS
+## every 公文包 item whose own countdown item the collection has unlocked (「仍需先解锁对应猫嘴物品」). A
+## 公文包 item stays in the pool until the mouth has found it, so a fresh collection can find its first one.
+func _fridge_draw_pool() -> Array[String]:
+	var pool := _fridge_mouth_item_pool()
+	# 动画图标: the cat's mouth can deal the 待机动画 icons too - three of a kind is what merges (see the deal).
+	for anim_id: String in _fridge_idle_anim_ids():
+		if not pool.has(anim_id):
+			pool.append(anim_id)
+	for entry: Dictionary in FRIDGE_BOX_ENTRIES:
+		var box_id := str(entry.get("id", ""))
+		if box_id.is_empty() or pool.has(box_id):
+			continue
+		var required := str(entry.get("requires", ""))
+		if required.is_empty() or fridge_owned_items.has(required):
+			pool.append(box_id)
+	return pool
+
+
+## 公文包物品: whether the cat's mouth has already unlocked this 公文包 item.
+func _is_fridge_box_unlocked(item_id: String) -> bool:
+	return fridge_box_unlocked.has(item_id)
+
+
+## 公文包物品: adds a 公文包 item to the collection the first time the cat's mouth deals it. Returns true
+## only for a NEW unlock (a second deal of the same item changes nothing).
+func _unlock_fridge_box_item(item_id: String) -> bool:
+	if item_id.is_empty() or fridge_box_unlocked.has(item_id):
+		return false
+	fridge_box_unlocked.append(item_id)
+	return true
+
+
+## 待机动画: the 骨架 page's animations in the order they unlock - the man's four, then the cat's four
+## (the FRIDGE_GALLERY_ENTRIES order, without the cards that are always there).
+func _fridge_idle_anim_ids() -> Array[String]:
+	var ids: Array[String] = []
+	for entry: Dictionary in FRIDGE_GALLERY_ENTRIES:
+		var entry_id := str(entry.get("id", ""))
+		if not FRIDGE_GALLERY_ALWAYS_IDS.has(entry_id):
+			ids.append(entry_id)
+	return ids
+
+
+## 第一页: what the 骨架 page shows - the always-on cards plus the animations that have been unlocked.
+func _fridge_skeleton_entries() -> Array:
+	var entries: Array = []
+	for entry: Dictionary in FRIDGE_GALLERY_ENTRIES:
+		var entry_id := str(entry.get("id", ""))
+		if FRIDGE_GALLERY_ALWAYS_IDS.has(entry_id) or fridge_unlocked_anims.has(entry_id):
+			entries.append(entry)
+	return entries
+
+
+## 每解锁3个新物品: every third item the player owns unlocks the next 待机动画, so the 骨架 page (the
+## notebook's first page) grows by one 冰箱人/小猫 animation icon on its own. Called from anywhere an item
+## can be gained (a refresh, a purchase, a load).
+func _sync_fridge_idle_anims() -> void:
+	var order := _fridge_idle_anim_ids()
+	# Integer division on purpose: only WHOLE groups of three unlock a card.
+	@warning_ignore("integer_division")
+	var wanted: int = clampi(fridge_owned_items.size() / FRIDGE_ITEMS_PER_ANIM_UNLOCK, 0, order.size())
+	for i in wanted:
+		if not fridge_unlocked_anims.has(order[i]):
+			fridge_unlocked_anims.append(order[i])
+	# ...and drop anything an older build may have left behind that is no longer in the table.
+	for anim_id: String in fridge_unlocked_anims.duplicate():
+		if not order.has(anim_id):
+			fridge_unlocked_anims.erase(anim_id)
+	# Rebuild the idle rotation bag on the next turn so newly unlocked (or reset) animations take effect at once.
+	fridge_idle_bag.clear()
+	_refresh_fridge_collection_pages()
+
+
+## 解锁进度: re-pushes the two collection pages (待机动画 and 猫嘴物品) whenever the collection changes,
+## so an OPEN book shows a newly found item or a newly unlocked animation straight away - the open path
+## does the same thing for a book that was closed at the time.
+func _refresh_fridge_collection_pages() -> void:
+	_refresh_fridge_box_entries()
+	if fridge_gallery_panel == null or not is_instance_valid(fridge_gallery_panel):
+		return
+	fridge_gallery_panel.call("update_tab_entries", FRIDGE_GALLERY_TAB_SKELETON, _fridge_skeleton_entries())
+	fridge_gallery_panel.call("update_tab_entries", FRIDGE_GALLERY_TAB_ITEMS, _fridge_unlocked_item_entries())
+	fridge_gallery_panel.call("update_tab_entries", FRIDGE_GALLERY_TAB_BOX, _fridge_unlocked_box_item_entries())
+
+
+## 公文包: the actions the opened case shows, i.e. only those whose cat-mouth item the player actually has
+## (`requires` in FRIDGE_BOX_ENTRIES: 番茄 owns 抛球杂耍, BB机 owns 字体/泡泡, 磁带 owns 音乐符号, 电视机 owns
+## 乌篷船) AND that have at least one unlocked interactive item (`_is_fridge_box_unlocked`). When the player
+## has not unlocked any interactive items for an action yet, neither that action's logo nor its un-unlocked
+## items appear in the briefcase ("没有解锁任何可交互物品，但是公文包里还是有一个番茄钟动画图标和未解锁的可交互物品图标").
+## Within an action that HAS at least one unlocked item, any other item not yet found stays greyed out (`disabled`).
+func _fridge_box_entries() -> Array:
+	var unlocked_actions: Dictionary = {}
+	for entry: Dictionary in FRIDGE_BOX_ENTRIES:
+		var required := str(entry.get("requires", ""))
+		if not required.is_empty() and not fridge_owned_items.has(required):
+			continue
+		var item_id := str(entry.get("id", ""))
+		if _is_fridge_box_unlocked(item_id):
+			var action_key := str(entry.get("action_id", entry.get("action_icon", "")))
+			unlocked_actions[action_key] = true
+	var out: Array = []
+	for entry: Dictionary in FRIDGE_BOX_ENTRIES:
+		var required := str(entry.get("requires", ""))
+		if not required.is_empty() and not fridge_owned_items.has(required):
+			continue
+		var action_key := str(entry.get("action_id", entry.get("action_icon", "")))
+		if not unlocked_actions.has(action_key):
+			continue
+		var item_id := str(entry.get("id", ""))
+		if not _is_fridge_box_unlocked(item_id):
+			continue
+		var row := entry.duplicate()
+		row["disabled"] = false
+		out.append(row)
+	return out
+
+
+## 公文包: re-pushes the action list after the collection changes (an unlock, or a 删除存档 reset) and keeps
+## the selection valid - an action whose item is gone falls back to the first one still in the case, and the
+## selection is empty while the case itself is.
+func _refresh_fridge_box_entries() -> void:
+	if fridge_box_panel == null or not is_instance_valid(fridge_box_panel):
+		return
+	var entries := _fridge_box_entries()
+	var next_selected := ""
+	for entry: Dictionary in entries:
+		if str(entry.get("id", "")) == fridge_box_selected_id:
+			next_selected = fridge_box_selected_id
+			break
+	if next_selected.is_empty() and not entries.is_empty():
+		next_selected = str((entries[0] as Dictionary).get("id", ""))
+	fridge_box_selected_id = next_selected
+	fridge_box_panel.call("set_entries", entries)
+	fridge_box_panel.call("set_selected", fridge_box_selected_id)
+
+
+## 全部解锁: tops a save up to EVERY item. Only ever used for a save written before the unlock system
+## existed, so an existing player keeps the whole collection it already had - a new save starts empty.
 func _ensure_all_fridge_items_owned() -> void:
 	for item: Dictionary in FRIDGE_ITEMS:
 		var item_id := str(item.get("id", ""))
 		if not item_id.is_empty() and not fridge_owned_items.has(item_id):
 			fridge_owned_items.append(item_id)
+
+
+## 全部解锁 (test helper): puts the level back into the pre-unlock-system state - every item owned, every
+## 待机动画 card unlocked and the whole mouth pool dealt - ⚠ WITHOUT writing the save. The suites that
+## compare the WHOLE gallery or the WHOLE collection call this, so their assertions do not depend on how
+## far the player has got (see test_gallery_tabs / test_idle_animations / test_progress_save).
+func _unlock_all_fridge_progress_for_tests() -> void:
+	_ensure_all_fridge_items_owned()
+	fridge_unlocked_anims = _fridge_idle_anim_ids()
+	fridge_mouth_items = _fridge_mouth_item_pool()
+	# 公文包物品: unlock every 公文包 item, so a suite can pick any of them without depending on what the
+	# cat's mouth has dealt.
+	fridge_box_unlocked.clear()
+	for entry: Dictionary in FRIDGE_BOX_ENTRIES:
+		var box_id := str(entry.get("id", ""))
+		if not box_id.is_empty() and not fridge_box_unlocked.has(box_id):
+			fridge_box_unlocked.append(box_id)
+	_rebuild_fridge_mouth_balls()
+	# ⚠ The refresh is what hands each ball its 分钟 badge (set_minutes) - without it the rebuilt balls
+	# draw no number at all.
+	_refresh_fridge_ui()
+	_refresh_fridge_collection_pages()
+
+
+## 概率 by 倒计时: an item's weight is the RECIPROCAL of its countdown length, so the shortest run is the
+## likeliest ball and the longest the rarest. Items without a fixed duration follow 专注秒数.
+func _fridge_mouth_item_weight(item_id: String) -> float:
+	return 1.0 / maxf(_get_fridge_item_duration(item_id), FRIDGE_MOUTH_WEIGHT_MIN_DURATION)
+
+
+## 抽签: one item out of `candidates`, drawn with probability proportional to _fridge_mouth_item_weight.
+## Returns "" only when the list is empty.
+func _pick_weighted_fridge_mouth_item(candidates: Array[String]) -> String:
+	if candidates.is_empty():
+		return ""
+	var total := 0.0
+	for item_id: String in candidates:
+		total += _fridge_mouth_item_weight(item_id)
+	if total <= 0.0:
+		return candidates[0]
+	var roll := randf() * total
+	for item_id: String in candidates:
+		roll -= _fridge_mouth_item_weight(item_id)
+		if roll <= 0.0:
+			return item_id
+	return candidates[candidates.size() - 1]
+
+
+## 抽奖: an id counts as 未解锁 while the player has never had it - a mouth item not yet owned, or a 公文包
+## item the cat's mouth has not drawn yet.
+func _fridge_draw_is_unowned(item_id: String) -> bool:
+	if _is_fridge_box_item(item_id):
+		return not _is_fridge_box_unlocked(item_id)
+	if _is_fridge_anim_id(item_id):
+		return not fridge_unlocked_anims.has(item_id)
+	return not fridge_owned_items.has(item_id)
+
+
+## 每天: rolls the daily counter over at midnight - the refresh count restarts, so the 前三次保底 applies
+## again the next day.
+func _fridge_sync_draw_day() -> void:
+	var today := Time.get_date_string_from_system()
+	if fridge_refresh_day != today:
+		fridge_refresh_day = today
+		fridge_daily_draws = 0
+
+
+## The pool's ids split into the group the deal wants: the un-owned ids (`unowned` true) or the ones the
+## player already has. ⚠ 一样的球: the split does NOT exclude ids the deal has already picked - a deal may
+## repeat an id now, which is what makes a 三个一样 possible.
+func _fridge_draw_pool_split(pool: Array[String], unowned: bool) -> Array[String]:
+	var out: Array[String] = []
+	for item_id: String in pool:
+		if _fridge_draw_is_unowned(item_id) == unowned:
+			out.append(item_id)
+	return out
+
+
+## Hands ONE dealt ball to the player: a 猫嘴物品 joins the collection, a 公文包 item is unlocked, a 待机动画
+## icon unlocks that animation. Returns true only for a NEW find.
+func _unlock_fridge_draw_item(item_id: String) -> bool:
+	if _is_fridge_anim_id(item_id):
+		if fridge_unlocked_anims.has(item_id):
+			return false
+		fridge_unlocked_anims.append(item_id)
+		return true
+	if _is_fridge_box_item(item_id):
+		return _unlock_fridge_box_item(item_id)
+	if fridge_owned_items.has(item_id):
+		return false
+	fridge_owned_items.append(item_id)
+	# 初始可交互道具: the briefcase gains this pomodoro item's own props with it - see
+	# _unlock_fridge_box_items_for ("当猫嘴里抽到各种番茄钟动画时，对应番茄钟的初始可交互道具也要加入到公文包里").
+	_unlock_fridge_box_items_for(item_id)
+	return true
+
+
+## 公文包: hands the briefcase every prop that belongs to a just-found 猫嘴物品 (each FRIDGE_BOX_ENTRIES row
+## whose `requires` is that item). Without this an item's props could only arrive by drawing each of them from
+## the cat's mouth separately (a 公文包 ball), so the briefcase showed an action with greyed-out placeholders.
+## Returns true when anything was newly unlocked.
+func _unlock_fridge_box_items_for(required_id: String) -> bool:
+	if required_id.is_empty():
+		return false
+	var unlocked_any := false
+	for entry: Dictionary in FRIDGE_BOX_ENTRIES:
+		if str(entry.get("requires", "")) != required_id:
+			continue
+		if _unlock_fridge_box_item(str(entry.get("id", ""))):
+			unlocked_any = true
+	return unlocked_any
+
+
+## Everything the player has NOT unlocked yet - the ids a 合成 may hand out. Reuses the draw pool, so the
+## 公文包 items are still gated by their `requires` mouth item.
+func _fridge_locked_draw_ids() -> Array[String]:
+	var out: Array[String] = []
+	for item_id: String in _fridge_draw_pool():
+		if _fridge_draw_is_unowned(item_id):
+			out.append(item_id)
+	return out
+
+
+## 合成: unlocks ONE random thing the player does not have yet (a 猫嘴物品, a 公文包 item or a 待机动画 icon).
+## Returns its id, or "" when everything is already unlocked.
+func _grant_random_fridge_unlock() -> String:
+	var locked := _fridge_locked_draw_ids()
+	if locked.is_empty():
+		return ""
+	var pick: String = locked[randi() % locked.size()]
+	_unlock_fridge_draw_item(pick)
+	return pick
+
+
+func _count_fridge_ball(balls: Array[String], item_id: String) -> int:
+	var n := 0
+	for ball: String in balls:
+		if ball == item_id:
+			n += 1
+	return n
+
+
+## 三个一样: consumes every TRIPLE of an identical ball in `dealt` and puts one random not-yet-unlocked
+## 物品/动画 in its place (the merged result is appended to `dealt`, so the mouth shows what it became).
+## Returns the ids newly unlocked this way. A triple of already-owned balls still merges (it is a 保底 for
+## duplicates), but it does nothing once EVERYTHING is unlocked.
+func _merge_fridge_mouth_matches(dealt: Array[String]) -> Array[String]:
+	var out: Array[String] = []
+	var checked: Array[String] = []
+	for item_id: String in dealt.duplicate():
+		if checked.has(item_id):
+			continue
+		checked.append(item_id)
+		while _count_fridge_ball(dealt, item_id) >= 3:
+			var grant := _grant_random_fridge_unlock()
+			if grant.is_empty():
+				break
+			var removed := 0
+			var i := 0
+			while i < dealt.size() and removed < 3:
+				if dealt[i] == item_id:
+					dealt.remove_at(i)
+					removed += 1
+				else:
+					i += 1
+			dealt.append(grant)
+			out.append(grant)
+	return out
+
+
+## 猫鼻子: rolls the balls that sit in the cat's mouth - 每次刷新最少3个，最多5个，每个物品按倒计时长短决定
+## 出现概率（时间越短越容易刷新出来，时间越长越不容易）.
+## 前三次保底: the first FRIDGE_DRAW_GUARANTEE_REFRESHES refreshes of the day each deal at least one not-yet-had
+## item, and every ball leans hard towards the un-owned ids; from the fourth refresh the un-owned chance drops
+## to FRIDGE_DRAW_UNOWNED_BASE.
+## 一样的球: ⚠ a deal MAY now repeat an id (the balls are independent picks). Every 三个一样的 is then MERGED
+## into one random not-yet-unlocked 物品/动画 (see _merge_fridge_mouth_matches).
+func _roll_fridge_mouth_items() -> Array[String]:
+	var pool := _fridge_draw_pool()
+	if pool.is_empty():
+		fridge_mouth_new_ids.clear()
+		return []
+	_fridge_sync_draw_day()
+	fridge_daily_draws += 1
+	var early := fridge_daily_draws <= FRIDGE_DRAW_GUARANTEE_REFRESHES
+	var count := randi_range(FRIDGE_MOUTH_REFRESH_MIN, FRIDGE_MOUTH_REFRESH_MAX)
+	var dealt: Array[String] = []
+	# 前三次保底: each of the day's early refreshes guarantees one not-yet-had item.
+	if early:
+		var unowned := _fridge_draw_pool_split(pool, true)
+		if not unowned.is_empty():
+			dealt.append(_pick_weighted_fridge_mouth_item(unowned))
+	var p_unowned := FRIDGE_DRAW_EARLY_UNOWNED_CHANCE if early else FRIDGE_DRAW_UNOWNED_BASE
+	while dealt.size() < count:
+		var unowned := _fridge_draw_pool_split(pool, true)
+		var owned := _fridge_draw_pool_split(pool, false)
+		var use_unowned := false
+		if unowned.is_empty():
+			use_unowned = false
+		elif owned.is_empty():
+			use_unowned = true
+		else:
+			use_unowned = randf() < p_unowned
+		dealt.append(_pick_weighted_fridge_mouth_item(unowned if use_unowned else owned))
+	# ...and hand out whatever was dealt: a 猫嘴物品 joins the collection, a 公文包 item / a 待机动画 is
+	# unlocked. All are permanent and show up straight away (in the notebook / in the briefcase).
+	var found: Array[String] = []
+	for item_id: String in dealt:
+		if _unlock_fridge_draw_item(item_id):
+			found.append(item_id)
+	# 三个一样: every triple merges into a random not-yet-unlocked 物品/动画, consuming the three.
+	var merged := _merge_fridge_mouth_matches(dealt)
+	# 未解锁过: the balls that handed the player something NEW flash their icon background (see FridgeYarnBall).
+	var new_ids: Array[String] = []
+	for item_id: String in found + merged:
+		if not new_ids.has(item_id):
+			new_ids.append(item_id)
+	fridge_mouth_new_ids = new_ids
+	if not new_ids.is_empty():
+		# 解锁新物品: the collection just grew - maybe an animation with it. This also refreshes the pages, so
+		# an OPEN briefcase / the notebook show the new unlock at once, and auto-saves the progress.
+		_sync_fridge_idle_anims()
+		_auto_save_fridge_on_unlock()
+		var names: Array[String] = []
+		for item_id: String in new_ids:
+			names.append(_fridge_draw_item_name(item_id))
+		_show_fridge_progress_toast(FridgeStrings.t("解锁新物品：%s") % ", ".join(names))
+	return dealt
+
+
+## 刷新猫嘴: frees the balls and builds one per DEALT item. Called by the nose, by a load and by the
+## initial build, so a newly found item shows up in the mouth straight away.
+func _rebuild_fridge_mouth_balls() -> void:
+	if fridge_yarn_pile == null or not is_instance_valid(fridge_yarn_pile):
+		return
+	for ball: Control in fridge_yarn_balls:
+		if ball != null and is_instance_valid(ball):
+			if ball.get_parent() == fridge_yarn_pile:
+				fridge_yarn_pile.remove_child(ball)
+			ball.queue_free()
+	fridge_yarn_balls.clear()
+	fridge_item_widgets.clear()
+	fridge_dragged_yarn_ball = null
+	fridge_yarn_spawn.clear()
+	for i in fridge_mouth_items.size():
+		var record := _get_fridge_draw_record(fridge_mouth_items[i])
+		if record.is_empty():
+			continue
+		_create_fridge_yarn_ball(record, i)
+	# 未解锁过: the flash markers are one-shot - the balls that were built just now carry their own flag.
+	fridge_mouth_new_ids.clear()
 
 
 ## 点击冰箱人: hides (or brings back) the notebook prop, the briefcase AND the cat - and while they are
@@ -3223,6 +4412,7 @@ func _ensure_all_fridge_items_owned() -> void:
 func _set_fridge_props_hidden(should_hide: bool) -> void:
 	fridge_props_hidden = should_hide
 	if should_hide:
+		_stop_fridge_idle_actions()
 		_close_fridge_gallery(false)
 		_close_fridge_box(false)
 		# 小猫隐藏: the cat goes too, and with it its mouth panel and its own item badges.
@@ -3391,7 +4581,7 @@ func _show_fridge_coin_popup(amount: int) -> void:
 	if fridge_overlay_root == null:
 		return
 	var label := Label.new()
-	label.text = "+%d 金币" % amount
+	label.text = FridgeStrings.t("+%d 金币") % amount
 	label.z_index = 1000
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -3402,6 +4592,33 @@ func _show_fridge_coin_popup(amount: int) -> void:
 	label.add_theme_constant_override("shadow_offset_x", 2)
 	label.add_theme_constant_override("shadow_offset_y", 2)
 	var start_position := _get_fridge_player_screen_position() + Vector2(-60.0, -338.0)
+	label.position = start_position
+	fridge_overlay_root.add_child(label)
+	fridge_coin_popups.append({
+		"label": label,
+		"elapsed": 0.0,
+		"start_position": start_position,
+	})
+
+
+## 保存/读取的回执: one line of paper text that floats up from the fridge man and fades - the same float
+## the coin reward uses (see _update_fridge_coin_popups), because the 进度 page's two actions have no
+## other way to say they happened.
+func _show_fridge_progress_toast(text: String) -> void:
+	if fridge_overlay_root == null:
+		return
+	var label := Label.new()
+	label.text = text
+	label.z_index = 1000
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size = Vector2(240.0, 34.0)
+	label.add_theme_font_size_override("font_size", 22)
+	label.add_theme_color_override("font_color", Color(0.99, 0.97, 0.90))
+	label.add_theme_color_override("font_shadow_color", Color(0.16, 0.12, 0.06, 0.92))
+	label.add_theme_constant_override("shadow_offset_x", 2)
+	label.add_theme_constant_override("shadow_offset_y", 2)
+	var start_position := _get_fridge_player_screen_position() + Vector2(-120.0, -338.0)
 	label.position = start_position
 	fridge_overlay_root.add_child(label)
 	fridge_coin_popups.append({
@@ -3448,7 +4665,9 @@ func _unlock_fridge_item(item_id: String, record: Dictionary) -> void:
 	fridge_coin_count -= price
 	fridge_owned_items.append(item_id)
 	fridge_active_item_id = item_id
-	_save_fridge_progress()
+	# 每解锁3个新物品: a purchase also counts towards the next 待机动画, and auto-saves the progress.
+	_sync_fridge_idle_anims()
+	_auto_save_fridge_on_unlock()
 	_refresh_fridge_ui()
 
 
@@ -3542,8 +4761,9 @@ func _format_fridge_duration(duration: float) -> String:
 	var total_seconds: int = int(round(duration))
 	var minutes: int = int(floor(float(total_seconds) / 60.0))
 	var seconds: int = total_seconds % 60
+	# 中英文切换: the FORMAT is translated before the numbers go in ("%d min" / "%d min %02d sec").
 	if minutes <= 0:
-		return "%d 秒" % seconds
+		return FridgeStrings.t("%d 秒") % seconds
 	if seconds == 0:
-		return "%d 分钟" % minutes
-	return "%d 分 %02d 秒" % [minutes, seconds]
+		return FridgeStrings.t("%d 分钟") % minutes
+	return FridgeStrings.t("%d 分 %02d 秒") % [minutes, seconds]

@@ -111,6 +111,10 @@ func _run() -> void:
 	# ---------- level: gallery entries, rotation and cat choreography ----------
 	var level: Node = load("res://scenes/FridgeLevel.tscn").instantiate()
 	get_root().add_child(level)
+
+	# 解锁进度: pin the FULLY UNLOCKED progress (without writing the player's save) - this suite reads
+	# the gallery / the collection / the cat's mouth, which must not depend on how far the player has played.
+	level.call("_unlock_all_fridge_progress_for_tests")
 	# Deterministic: the automatic rotation is driven explicitly below. Set before
 	# the first processed frame so nothing starts on its own.
 	level.set("fridge_idle_rotation_enabled", false)
@@ -155,17 +159,18 @@ func _run() -> void:
 	var entries: Array = level.get("FRIDGE_GALLERY_ENTRIES")
 
 	print("gallery entries=", entries.size(), " cat_home=", cat_home)
-	if entries.size() < 10:
+	# ⚠ 9, not 13: the four 猫嘴物品 performances (抛球杂耍 / BB机来讯 / 磁带机舞 / 渔民垂钓) are NOT listed
+	# on this page any more - they are played by clicking the item's own icon on the 猫嘴物品 page.
+	if entries.size() < 9:
 		failures.append("gallery is missing entries (%d)" % entries.size())
-	var has_pager := false
+	var bare_performances: Array = ["juggle", "man_pager", "man_cassette", "man_tv"]
 	for entry: Dictionary in entries:
-		if str(entry.get("id", "")) == "man_pager":
-			has_pager = true
+		var entry_id := str(entry.get("id", ""))
+		if bare_performances.has(entry_id):
+			failures.append("%s is still listed on the 骨架 page" % entry_id)
 		var icon_path := str(entry.get("icon", ""))
 		if not FileAccess.file_exists(ProjectSettings.globalize_path(icon_path)):
 			failures.append("gallery entry %s has no icon file (%s)" % [entry.get("id", "?"), icon_path])
-	if not has_pager:
-		failures.append("the BB机 (pager) entry is not in the gallery")
 
 	# A gallery entry drives the cat's animation (小猫玩球).
 	level.call("_on_fridge_gallery_entry_pressed", "cat_play_ball")
@@ -266,24 +271,24 @@ func _run() -> void:
 	if stand_art.size == Vector2.ZERO or panel_rect.end.y > stand_art.position.y + 0.5:
 		failures.append("the backpack panel is not above the stand's art (panel %s vs art %s)" % [panel_rect, stand_art])
 
-	# BB机来讯: the pager reaction plays from the gallery, and because it is a
-	# preview it ends on its own instead of being held until a countdown ends.
-	var pager_duration: float = float(level.get_script().get_script_constant_map().get("FRIDGE_PAGER_PREVIEW_DURATION", 0.0))
+	# BB机来讯: the pager reaction plays from the 猫嘴物品 page now (its icon is no longer listed on the
+	# 骨架 page), and runs for the item's configured duration (`_get_fridge_item_duration("pager")`).
+	var pager_duration: float = float(level.call("_get_fridge_item_duration", "pager"))
 	level.call("_stop_fridge_idle_actions")
-	level.call("_on_fridge_gallery_entry_pressed", "man_pager")
+	level.call("_on_fridge_gallery_entry_pressed", "item_pager")
 	# Read before awaiting a frame: the preview clock ticks down with frame deltas.
 	var pager_started: bool = bool(level_player.get("pager_reaction_active")) or bool(level_player.get("pager_hold_active"))
 	var pager_preview: float = float(level_player.get("pager_preview_timer"))
 	await process_frame
-	print("gallery man_pager: started=", pager_started, " preview=", pager_preview, "/", pager_duration)
+	print("item page pager: started=", pager_started, " preview=", pager_preview, "/", pager_duration)
 	if not pager_started:
-		failures.append("gallery entry did not start the pager reaction")
+		failures.append("the item page did not start the pager reaction")
 	if absf(pager_preview - pager_duration) > 0.2:
 		failures.append("the pager preview is not on its own clock (%.2f)" % pager_preview)
 	level_player.set("pager_preview_timer", 0.05)
 	level_player.call("_update_pager_reaction", 0.1)
 	var pager_stopped: bool = not bool(level_player.get("pager_reaction_active")) and not bool(level_player.get("pager_hold_active"))
-	print("gallery man_pager: ended_itself=", pager_stopped)
+	print("item page pager: ended_itself=", pager_stopped)
 	if not pager_stopped:
 		failures.append("the pager gallery preview did not end by itself")
 	await process_frame
@@ -407,6 +412,27 @@ func _run() -> void:
 	print("bag leads with=", lead_action, " man_leads=", man_leads)
 	if not man_leads:
 		failures.append("the idle rotation does not lead with a visible fridge man animation")
+
+	# 只播放已解锁的待机动画: un-unlocked animations never enter the bag or play on their own.
+	level.call("_stop_fridge_idle_actions")
+	level.set("fridge_unlocked_anims", [] as Array[String])
+	level.set("fridge_idle_bag", [])
+	var empty_bag: Array = level.call("_build_fridge_idle_bag")
+	level.set("fridge_idle_timer", 0.0)
+	await process_frame
+	await process_frame
+	var fired_when_none_unlocked := bool(level_player.call("is_idle_action_active")) \
+		or bool(cat.call("is_idle_action_active")) \
+		or str(level.get("fridge_cat_motion")) != ""
+	print("unlocked-only: empty_bag=", empty_bag.size(), " fired_when_none_unlocked=", fired_when_none_unlocked)
+	if not empty_bag.is_empty() or fired_when_none_unlocked:
+		failures.append("an un-unlocked idle animation was built or played when none were unlocked")
+	level.set("fridge_unlocked_anims", ["man_smoke", "cat_play_ball"] as Array[String])
+	var partial_bag: Array = level.call("_build_fridge_idle_bag")
+	print("unlocked-only partial_bag=", partial_bag)
+	if partial_bag.size() != 2:
+		failures.append("partial unlocked bag size %d != 2" % partial_bag.size())
+	level.call("_unlock_all_fridge_progress_for_tests")
 
 	# Nothing idle plays during a running round.
 	level.call("_stop_fridge_idle_actions")

@@ -1,0 +1,40 @@
+{
+	"animation_name": "taking_a_cream_enamel_mug_with_a_red_rim_out_of_his_pocket_raising_it_to_his_mouth_and_drinking_a_long_sip_then_lowering_it_back_down",
+	"animation_style": "",
+	"animation_type": "taking a cream enamel mug with a red rim out of his pocket, raising it to his mouth and drinking a long sip, then lowering it back down",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "paper_fridge_idle_drink",
+	"prompt": "taking a cream enamel mug with a red rim out of his pocket, raising it to his mouth and drinking a long sip, then lowering it back down",
+	"rows": 1,
+	"source_image": "res://tests/_ref_man_idle_frame.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/paper_fridge_idle_drink.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

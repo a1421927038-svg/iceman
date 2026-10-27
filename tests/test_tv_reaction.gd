@@ -279,6 +279,10 @@ func _run() -> void:
 	# ---- taking the television out of the cat's mouth starts it (the real level path) ----
 	var scene: Node = load("res://scenes/FridgeLevel.tscn").instantiate()
 	get_root().add_child(scene)
+
+	# 解锁进度: pin the FULLY UNLOCKED progress (without writing the player's save) - this suite drives
+	# the item take-out path, which needs the item owned.
+	scene.call("_unlock_all_fridge_progress_for_tests")
 	await process_frame
 	await process_frame
 	var save_coins: int = int(scene.get("fridge_coin_count"))

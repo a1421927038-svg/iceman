@@ -8,7 +8,7 @@ extends Node2D
 const SCHEDULE := [
 	{"at": 0.4, "call": "_on_fridge_box_entry_pressed", "arg": "spray_bubble"},
 	{"at": 0.8, "call": "_on_fridge_box_entry_pressed", "arg": "spray_text"},
-	{"at": 1.2, "call": "_on_fridge_gallery_entry_pressed", "arg": "man_pager"},
+	{"at": 1.2, "call": "_on_fridge_gallery_entry_pressed", "arg": "item_pager"},
 ]
 
 var level: Node

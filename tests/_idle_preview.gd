@@ -12,7 +12,7 @@ extends Node2D
 
 const SCHEDULE := [
 	{"at": 0.5, "call": "_on_fridge_gallery_stand_toggled", "arg": true},
-	{"at": 3.0, "call": "_on_fridge_gallery_entry_pressed", "arg": "man_pager"},
+	{"at": 3.0, "call": "_on_fridge_gallery_entry_pressed", "arg": "item_pager"},
 	{"at": 11.0, "call": "_start_fridge_cat_orbit", "arg": 8.5},
 ]
 

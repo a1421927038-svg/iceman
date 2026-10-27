@@ -1,0 +1,40 @@
+{
+	"animation_name": "orc_warrior_spinning_his_whole_body_in_a_360_degree_whirlwind_attack_torso_arms_and_legs_turning_dynamically",
+	"animation_style": "",
+	"animation_type": "orc warrior spinning his whole body in a 360 degree whirlwind attack, torso arms and legs turning dynamically",
+	"columns": 3,
+	"directions": [],
+	"frame_count": 3,
+	"frame_height": 512,
+	"frame_paths": [],
+	"frame_regions": [
+		{
+			"h": 512,
+			"w": 512,
+			"x": 0,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 512,
+			"y": 0
+		},
+		{
+			"h": 512,
+			"w": 512,
+			"x": 1024,
+			"y": 0
+		}
+	],
+	"frame_width": 512,
+	"name": "paper_orc_warrior_spin_anim",
+	"prompt": "orc warrior spinning his whole body in a 360 degree whirlwind attack, torso arms and legs turning dynamically",
+	"rows": 1,
+	"source_image": "res://assets/generated/paper_orc_warrior_base.png",
+	"source_tool": "animate_sprite",
+	"spritesheet_height": 512,
+	"spritesheet_path": "res://assets/generated/paper_orc_warrior_spin_anim.png",
+	"spritesheet_width": 1536,
+	"type": "animation"
+}

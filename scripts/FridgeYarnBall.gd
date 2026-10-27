@@ -42,25 +42,91 @@ var interactable := true
 var velocity := Vector2.ZERO
 var is_dragging_visual := false
 var icon_texture: Texture2D
+## 明显区分: an explicit icon path (a 公文包 item's own box-entry art). Empty means the default
+## `paper_icon_<item_id>.png` a countdown item uses.
+var icon_path := ""
+## 蓝色: a 公文包 item's ball is a BLUE paper token (「公文包物品在小猫嘴里的图标背景色改成蓝色」), so the
+## player can tell at a glance which balls will add something to the briefcase. Countdown items keep their
+## own palette (_get_palette).
+var box_item := false
+## The blue paper palette of a 公文包 ball: [card fill, ring, dark accent].
+const BOX_BALL_CARD_COLOR := Color(0.42, 0.62, 0.86)
+const BOX_BALL_BORDER_COLOR := Color(0.72, 0.86, 0.99)
+const BOX_BALL_ACCENT_COLOR := Color(0.15, 0.29, 0.52)
+## 绿色: a 待机动画 icon's ball is a GREEN paper token (「待机动画在猫嘴里的图标背景颜色改成绿色」), so the
+## player can tell at a glance which balls are idle animation icons rather than countdown or briefcase items.
+var anim_item := false
+## The green paper palette of a 待机动画 ball: [card fill, ring, dark accent].
+const ANIM_BALL_CARD_COLOR := Color(0.42, 0.76, 0.48)
+const ANIM_BALL_BORDER_COLOR := Color(0.74, 0.94, 0.76)
+const ANIM_BALL_ACCENT_COLOR := Color(0.18, 0.44, 0.22)
+## 未解锁过: a ball that has just handed the player something NEW (a first-time 物品/动画) flashes the icon's
+## background - its paper token blinks towards a warm white for FLASH_DURATION seconds (FLASH_BLINKS pulses),
+## so a first-time find reads as a find (see FridgeLevel.fridge_mouth_new_ids).
+const FLASH_DURATION := 2.4
+const FLASH_BLINKS := 4.0
+const FLASH_PEAK := 0.72
+const FLASH_COLOR := Color(1.0, 0.97, 0.78)
+var new_find := false
+var _flash_elapsed := 0.0
 
 
-func setup(new_item_id: String, new_item_name: String, is_unlocked: bool, new_reward_amount: int) -> void:
+func setup(new_item_id: String, new_item_name: String, is_unlocked: bool, new_reward_amount: int,
+		new_icon_path := "", new_radius := -1.0, new_is_box := false, new_is_anim := false) -> void:
 	item_id = new_item_id
 	item_name = new_item_name
 	unlocked = is_unlocked
 	reward_amount = new_reward_amount
+	box_item = new_is_box
+	anim_item = new_is_anim
+	if not new_icon_path.is_empty():
+		icon_path = new_icon_path
+	# 明显区分: a consumable's ball is smaller than a countdown item's (passed in by the level).
+	if new_radius > 0.0:
+		radius = new_radius
 	custom_minimum_size = Vector2(radius * 2.0 + 12.0, radius * 2.0 + 12.0)
 	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	# 数字: no hover tooltip - the ball prints its length in minutes under the logo instead (the
 	# level calls set_minutes). tooltip_text is left EMPTY on purpose (FridgeLevel clears it too).
 	tooltip_text = ""
+	# 未解锁过: the flash is off unless set_new_find(true) turns the per-frame redraw on.
+	set_process(false)
 	_load_icon()
 	queue_redraw()
 
 
+## 未解锁过: starts (value true) or clears the icon-background flash. The ball only redraws per frame while it
+## is flashing, so an ordinary ball costs nothing.
+func set_new_find(value: bool) -> void:
+	new_find = value
+	_flash_elapsed = 0.0
+	set_process(value)
+	if not value:
+		queue_redraw()
+
+
+func _process(delta: float) -> void:
+	if not new_find:
+		set_process(false)
+		return
+	_flash_elapsed += delta
+	if _flash_elapsed >= FLASH_DURATION:
+		new_find = false
+		set_process(false)
+	queue_redraw()
+
+
+## 0 at the start and the end, FLASH_PEAK at the peak of each blink.
+func _flash_amount() -> float:
+	if not new_find:
+		return 0.0
+	var phase := clampf(_flash_elapsed / FLASH_DURATION, 0.0, 1.0)
+	return FLASH_PEAK * (0.5 - 0.5 * cos(phase * FLASH_BLINKS * TAU))
+
+
 func _load_icon() -> void:
-	var path := "res://assets/generated/paper_icon_%s.png" % item_id
+	var path := icon_path if not icon_path.is_empty() else "res://assets/generated/paper_icon_%s.png" % item_id
 	if ResourceLoader.exists(path):
 		icon_texture = load(path) as Texture2D
 	else:
@@ -191,8 +257,14 @@ func _draw() -> void:
 	# 1. Soft paper drop shadow
 	draw_circle(center + Vector2(1.5, 3.5), draw_r + 1.5, Color(0.0, 0.0, 0.0, 0.26 * alpha))
 
-	# 2. Main paper-cut circle token base
+	# 2. Main paper-cut circle token base. 未解锁过: while the flash runs it blinks towards a warm paper white -
+	#    the whole card lightens AND a bright ring pulses around it, so the icon's background reads as a find.
 	draw_circle(center, draw_r, _with_alpha(card_color, alpha))
+	var flash := _flash_amount()
+	if flash > 0.0:
+		draw_circle(center, draw_r, _with_alpha(FLASH_COLOR, flash * alpha))
+		draw_arc(center, draw_r + 3.0, 0.0, TAU, 40, _with_alpha(FLASH_COLOR, flash), 4.0, true)
+		draw_arc(center, draw_r + 1.2, 0.0, TAU, 40, _with_alpha(FLASH_COLOR, flash), 2.0, true)
 
 	# 3. Inner craft border ring (paper collage edge)
 	draw_arc(center, draw_r - 2.0, 0.0, TAU, 36, _with_alpha(border_color, 0.95 * alpha), 1.8, true)
@@ -297,6 +369,12 @@ func _with_alpha(color: Color, alpha: float) -> Color:
 
 
 func _get_palette() -> Array[Color]:
+	# 蓝色: a 公文包 item's ball wears the BLUE paper token whatever its id.
+	if box_item:
+		return [BOX_BALL_CARD_COLOR, BOX_BALL_BORDER_COLOR, BOX_BALL_ACCENT_COLOR]
+	# 绿色: a 待机动画 icon's ball wears the GREEN paper token whatever its id.
+	if anim_item:
+		return [ANIM_BALL_CARD_COLOR, ANIM_BALL_BORDER_COLOR, ANIM_BALL_ACCENT_COLOR]
 	match item_id:
 		"cassette":
 			return [Color(0.93, 0.84, 0.65), Color(0.98, 0.93, 0.80), Color(0.48, 0.36, 0.22)]

@@ -77,10 +77,32 @@ func _run() -> void:
 	get_root().add_child(level)
 	await process_frame
 	await process_frame
+	# 中英文切换: pin 中文 (without writing the player's save) - this suite compares the game's Chinese
+	# strings, which must not depend on whichever language the player last picked.
+	level.call("_set_fridge_language", "zh", false)
+
+	# 解锁进度: pin the FULLY UNLOCKED progress (without writing the player's save) - this suite reads
+	# the gallery / the collection / the cat's mouth, which must not depend on how far the player has played.
+	level.call("_unlock_all_fridge_progress_for_tests")
+	# ⚠ This suite drives the real take-out path, which writes the save; the player's own file is read here
+	# and put back byte for byte at the end. An ABSENT file (a fresh game) stays absent, so a test run never
+	# hands a new player the collection this suite pinned.
+	var live_save_path: String = str((level.get_script() as Script).get_script_constant_map().get("FRIDGE_SAVE_PATH", ""))
+	var live_backup: String = ""
+	if not live_save_path.is_empty() and FileAccess.file_exists(live_save_path):
+		live_backup = FileAccess.open(live_save_path, FileAccess.READ).get_as_text()
 	# This test drives the real take-out path, which writes the save; keep the
 	# player's own state (coins + active item) intact.
 	var save_coins: int = int(level.get("fridge_coin_count"))
 	var save_active_item: String = str(level.get("fridge_active_item_id"))
+	# ⚠ 公文包: the box's armed action is part of the SAVE now (book-progress-tab), so a player who picked
+	# 字体 or 乌篷船 while playing has it restored on launch - and this test's box assertions describe the
+	# 抛球杂耍 state. It is pinned here and put back with the rest of the guard at the end.
+	var save_box_id: String = str(level.get("fridge_box_selected_id"))
+	level.set("fridge_box_selected_id", "juggle_tomato")
+	var guard_box_panel: Node = level.get("fridge_box_panel")
+	if guard_box_panel != null and is_instance_valid(guard_box_panel):
+		guard_box_panel.call("set_selected", "juggle_tomato")
 	var widgets: Dictionary = level.get("fridge_item_widgets")
 	var tomato_ball: Control = (widgets.get("tomato", {}) as Dictionary).get("ball") as Control
 	var tip: String = tomato_ball.tooltip_text if tomato_ball != null else ""
@@ -156,9 +178,8 @@ func _run() -> void:
 	var panel_consts: Dictionary = (load("res://addons/骨骼动画/action_gallery_panel.gd") as Script).get_script_constant_map()
 	# 上面一排: the row shows ACTION_PAGE_SIZE logos at a time and the wheel turns the page.
 	var page_size: int = int(panel_consts.get("ACTION_PAGE_SIZE", 3))
-	# ⚠ SEVEN entries once carried a second 电视机 card (冰山) - it was removed on request, so the box is
-	# back to SIX entries in FOUR groups, one card per later cat-mouth item.
-	var entries_ok := box_entries.size() == 6
+	# ⚠ EIGHT entries in SIX groups: 抛球杂耍 (2), BB机来讯 (2), 磁带机 (1), 电视机 (1), 90年代电脑 (1: 炉石), 游戏机手柄 (1: 超级玛丽奥卡带).
+	var entries_ok := box_entries.size() == 8
 	var group_count := 0
 	var group_sizes: Array = []
 	var action_names: Array = []
@@ -187,9 +208,8 @@ func _run() -> void:
 		" item_icons=", found.get("icons", 0),
 		" tray_cells=", found.get("cells", 0), " empty=", found.get("empty_slots", 0),
 		" labels=", found.get("labels", []))
-	# 猫嘴里的动画: FOUR actions - 抛球杂耍 and BB机来讯 (two cards each), plus the two items the
-	# cat's bag gained later (磁带机 / 电视机), one card each.
-	ok = ok and entries_ok and group_count == 4 and group_sizes == [2, 2, 1, 1]
+	# 猫嘴里的动画: SIX actions - 抛球杂耍 and BB机来讯 (two cards each), 磁带机 / 电视机 / 90年代电脑 / 游戏机手柄 (one card each).
+	ok = ok and entries_ok and group_count == 6 and group_sizes == [2, 2, 1, 1, 1, 1]
 	# 上面一排: one BUTTON per action, but only ACTION_PAGE_SIZE of them fit on a page - the row shows
 	# the first three and the wheel turns to the fourth. The row is furniture above ONE item grid (a
 	# 3x2 tray), and only the chosen action's items are built into it.
@@ -279,7 +299,7 @@ func _run() -> void:
 	# would make, because a headless run has no real pointer.
 	var hover_card: Control = null
 	for cell_node: Node in cell_cards:
-		if str(cell_node.name).begins_with("Tomato"):
+		if str(cell_node.name).begins_with("Juggle"):
 			hover_card = cell_node as Control
 	var hover_icon: TextureRect = null
 	if hover_card != null:
@@ -287,12 +307,12 @@ func _run() -> void:
 			hover_icon = node as TextureRect
 	var rest_scale: float = hover_icon.scale.x if hover_icon != null else 0.0
 	if box_panel != null:
-		box_panel.call("_on_card_hover", "tomato", true)
+		box_panel.call("_on_card_hover", "juggle_tomato", true)
 	for i in range(60):
 		await process_frame
 	var hover_scale: float = hover_icon.scale.x if hover_icon != null else 0.0
 	if box_panel != null:
-		box_panel.call("_on_card_hover", "tomato", false)
+		box_panel.call("_on_card_hover", "juggle_tomato", false)
 	for i in range(60):
 		await process_frame
 	var back_scale: float = hover_icon.scale.x if hover_icon != null else 0.0
@@ -323,7 +343,7 @@ func _run() -> void:
 	if box_panel != null:
 		ok = ok and str(box_panel.call("get_active_action")) == str(action_keys[1])
 		# The item in hand does not change: 番茄 is simply not on the page on show.
-		ok = ok and str(box_panel.call("get_selected")) == "tomato"
+		ok = ok and str(box_panel.call("get_selected")) == "juggle_tomato"
 	ok = ok and int(swapped.get("icons", 0)) == int(group_sizes[1])
 	var expected_swapped: Array = []
 	for entry: Dictionary in box_entries:
@@ -594,9 +614,38 @@ func _run() -> void:
 	probe.queue_free()
 	await process_frame
 
+	# 变成盒子时清除打瞌睡气泡: if the fridge man is mid-doze (sleep bubble visible above his head)
+	# and turns into a box (`_set_fridge_props_hidden(true)`), his idle action and `DozeCycle` must
+	# immediately stop and hide the sleep bubbles.
+	box_player.call("play_idle_action", "doze", 13.0)
+	var man_doze: Node = box_player.get("doze") as Node
+	for i in range(60):
+		box_player.call("_process", 0.05)
+	var bubble_before: Sprite2D = man_doze.get("_bubble") as Sprite2D if man_doze != null else null
+	var was_dozing_before_box: bool = bubble_before != null and bubble_before.visible
+	level.call("_set_fridge_props_hidden", true)
+	await process_frame
+	var bubble_while_boxed: bool = bubble_before != null and bubble_before.visible
+	var doze_enabled_while_boxed: bool = man_doze != null and bool(man_doze.call("is_enabled"))
+	level.call("_set_fridge_props_hidden", false)
+	await process_frame
+	print("box disguise vs doze bubble: before=", was_dozing_before_box,
+		" while_boxed=", bubble_while_boxed, " doze_enabled=", doze_enabled_while_boxed)
+	ok = ok and was_dozing_before_box and not bubble_while_boxed and not doze_enabled_while_boxed
+
 	level.set("fridge_coin_count", save_coins)
 	level.set("fridge_active_item_id", save_active_item)
-	level.call("_save_fridge_progress")
+	level.set("fridge_box_selected_id", save_box_id)
+	# ⚠ Put the player's LIVE save back byte for byte - and if there was NONE (a fresh game), leave none:
+	# `_save_fridge_progress()` would write the collection this suite pinned (every item), which is exactly
+	# the unlocks a new player has not found yet.
+	if live_backup.is_empty():
+		if not live_save_path.is_empty():
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(live_save_path))
+	else:
+		var live := FileAccess.open(live_save_path, FileAccess.WRITE)
+		live.store_string(live_backup)
+		live.close()
 	print("FRIDGE_FEATURES_TEST=", "PASS" if ok else "FAIL")
 	level.queue_free()
 	await process_frame
@@ -645,7 +694,7 @@ func _collect_box_widgets(node: Node, found: Dictionary) -> void:
 	# 只留图标: a cell's own caption. The box prints none any more - its names live in the tooltip.
 	if node.name == "CellName" or node.name == "CellDescription":
 		found["names"] = int(found.get("names", 0)) + 1
-	if node is Label:
+	if node is Label and node.name != "CellBadge":
 		var texts: Array = found.get("labels", [])
 		texts.append((node as Label).text)
 		found["labels"] = texts

@@ -31,6 +31,10 @@ window/per_pixel_transparency/allowed=true
 
 theme/custom="res://ui/paper_tooltip_theme.tres"
 
+[internationalization]
+
+locale/fallback="zh"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
